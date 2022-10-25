@@ -1,0 +1,18 @@
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/sync.yml'
+
+name: Update universe
+
+# Do not launch new job before the old one is done
+concurrency: ${{ github.workflow }}
+
+jobs:
+  update:
+    name: Update submodules
+    uses: r-universe/workflows/.github/workflows/sync.yml@v1
+    secrets: inherit

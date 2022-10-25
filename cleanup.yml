@@ -1,0 +1,15 @@
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.gitmodules'
+
+name: Cleanup package server
+
+jobs:
+  update:
+    name: Delete removed packages
+    uses: r-universe/workflows/.github/workflows/cleanup.yml@v1
+    secrets: inherit
