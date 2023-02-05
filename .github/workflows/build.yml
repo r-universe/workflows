@@ -167,6 +167,9 @@ jobs:
         include:
           - os: 'windows'
             r: 'devel'
+          - os: 'macos'
+            r: 'devel'
+
     steps:
       - name: Before cache
         if: runner.os == 'macos'
