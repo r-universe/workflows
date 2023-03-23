@@ -96,7 +96,7 @@ jobs:
     needs: prepare
     name: Build source package
     runs-on: ubuntu-20.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     outputs:
       commitinfo: ${{ steps.build.outputs.COMMITINFO }}
       maintainerinfo: ${{ steps.build.outputs.MAINTAINERINFO }}
