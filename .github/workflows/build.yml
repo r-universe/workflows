@@ -105,6 +105,7 @@ jobs:
       version: ${{ steps.build.outputs.VERSION }}
       java: ${{ steps.build.outputs.NEED_RJAVA }}
       jags: ${{ steps.build.outputs.NEED_JAGS }}
+      ostype: ${{ steps.build.outputs.OSTYPE }}
     steps:
       - id: build
         name: Build source package
@@ -275,3 +276,4 @@ jobs:
           deployed_packages: ${{ needs.deploy.outputs.deployed_packages }}
           source_status: ${{ needs.source.result }}
           docs_status: ${{ needs.docs.result }}
+          ostype: ${{ needs.source.outputs.ostype }}
