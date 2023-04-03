@@ -164,7 +164,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows, macos ]
-        r: [ 'devel', 'release' ]
+        r: [ 'release', 'oldrel' ]
 
     steps:
       - name: Before cache
