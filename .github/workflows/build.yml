@@ -187,6 +187,8 @@ jobs:
       - name: Prepare macOS system
         if: runner.os == 'macos'
         uses: r-universe-org/macos-actions/prepare-macos@master
+        with:
+          version: ${{ matrix.r }}
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
