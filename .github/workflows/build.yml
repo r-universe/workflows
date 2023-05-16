@@ -18,7 +18,6 @@ jobs:
     outputs:
       repo_url: ${{ steps.lookup.outputs.repo_url }}
       repo_name: ${{ steps.lookup.outputs.repo_name }}
-      repo_owner: ${{ steps.lookup.outputs.repo_owner }}
       repo_commit: ${{ steps.lookup.outputs.repo_commit }}
       repo_subdir: ${{ steps.lookup.outputs.repo_subdir }}
       repo_branch: ${{ steps.lookup.outputs.repo_branch }}
