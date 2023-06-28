@@ -246,7 +246,7 @@ jobs:
   deploy:
     name: Deploy to package server
     runs-on: ubuntu-22.04
-    needs: [source, binaries, docs]
+    needs: [prepare, source, binaries, docs]
     if: ${{ always() && needs.source.outputs.package }}
     outputs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
@@ -261,6 +261,7 @@ jobs:
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           PKGDOCS: ${{ needs.docs.result }}
+          SKIP_BINARIES: ${{ needs.prepare.outputs.skip_binaries }}
 
   finalstatus:
     name: Set Github Status
