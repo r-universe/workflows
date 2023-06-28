@@ -25,6 +25,7 @@ jobs:
       universe_app: ${{ steps.lookup.outputs.universe_app }}
       maintainer_login: ${{ steps.lookup.outputs.maintainer_login }}
       build_docs: ${{ steps.lookup.outputs.build_docs }}
+      skip_binaries: ${{ steps.lookup.outputs.skip_binaries }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -155,7 +156,7 @@ jobs:
 
   binaries:
     needs: [prepare, source]
-    if: ${{ always() && needs.source.outputs.sourcepkg }}
+    if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
     runs-on: ${{ matrix.os }}-${{ matrix.os == 'macos' && '11' || 'latest' }}
     timeout-minutes: 60
     name: Build R-${{ matrix.r }} for ${{ matrix.os }}
