@@ -4,13 +4,12 @@ on:
 jobs:
   update:
     name: Delete removed packages
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Find and delete packages
         uses: r-universe-org/delete-packages@master
         with:
-          monorepo_url: https://github.com/${{ github.repository }}
-          cranlike_url: https://${{ github.event.repository.name }}.r-universe.dev/packages
+          universe: ${{ github.event.repository.name }}
         env:
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
           GITHUB_PAT: ${{ secrets.GHPAT }}
