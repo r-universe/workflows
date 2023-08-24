@@ -112,6 +112,7 @@ jobs:
         uses: r-universe-org/build-source@master
         env:
           MAINTAINERLOGIN: ${{ needs.prepare.outputs.maintainer_login }}
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           url: ${{ needs.prepare.outputs.repo_url }}
           ref: ${{ needs.prepare.outputs.repo_commit }}
@@ -200,7 +201,7 @@ jobs:
         uses: r-universe-org/build-and-check@master
         if: runner.os != 'windows'
         env:
-          GITHUB_PAT: ${{ secrets.PUBLIC_PAT }}
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           jags: ${{ needs.source.outputs.jags }}
@@ -208,7 +209,7 @@ jobs:
         uses: r-universe-org/build-and-check@windows
         if: runner.os == 'windows'
         env:
-          GITHUB_PAT: ${{ secrets.PUBLIC_PAT }}
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           java: ${{ needs.source.outputs.java }}
