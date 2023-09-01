@@ -157,7 +157,7 @@ jobs:
 
   wasm:
     needs: [prepare, source]
-    if: ${{ always() && needs.source.outputs.sourcepkg && needs.prepare.outputs.build_docs }}
+    if: ${{ always() && needs.source.outputs.sourcepkg }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     name: Build for webassembly
@@ -172,6 +172,8 @@ jobs:
         uses: r-universe-org/build-wasm@master
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
       - name: "Generate pkgdata"
         uses: r-universe-org/generate-pkgdata@master
         if: ${{ always() && steps.build.outputs.binarypkg }}
