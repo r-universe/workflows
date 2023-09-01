@@ -155,6 +155,45 @@ jobs:
             ${{ steps.build.outputs.BINARYPKG }}
             pkgdata.txt
 
+  wasm:
+    needs: [prepare, source]
+    if: ${{ always() && needs.source.outputs.sourcepkg && needs.prepare.outputs.build_docs }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    name: Build for webassembly
+    steps:
+      - name: Download source package
+        uses: actions/download-artifact@v3
+        with:
+          name: package-source
+          path: .
+      - id: build
+        name: Build wasm binary
+        uses: r-universe-org/build-wasm@master
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+      - name: "Generate pkgdata"
+        uses: r-universe-org/generate-pkgdata@master
+        if: ${{ always() && steps.build.outputs.binarypkg }}
+        with:
+          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
+          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
+          JOB_STATUS: ${{ job.status }}
+          PACKAGE: ${{ needs.source.outputs.package }}
+          VERSION: ${{ needs.source.outputs.version }}
+          COMMITINFO: ${{ needs.source.outputs.commitinfo }}
+          MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
+          FILE: ${{ steps.build.outputs.binarypkg }}
+          TARGET: "wasm"
+      - name: "Save binary package"
+        uses: actions/upload-artifact@v3
+        if: ${{ always() && steps.build.outputs.binarypkg }}
+        with:
+          name: package-wasm-release
+          path: |
+            ${{ steps.build.outputs.binarypkg }}
+            pkgdata.txt
+
   binaries:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
@@ -247,7 +286,7 @@ jobs:
   deploy:
     name: Deploy to package server
     runs-on: ubuntu-22.04
-    needs: [prepare, source, binaries, docs]
+    needs: [prepare, source, binaries, wasm, docs]
     if: ${{ always() && needs.source.outputs.package }}
     outputs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
