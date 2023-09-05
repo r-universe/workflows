@@ -70,6 +70,8 @@ jobs:
           repo_url: ${{ needs.prepare.outputs.repo_url }}
           subdir: ${{ needs.prepare.outputs.repo_subdir }}
           registry: ${{ github.event.repository.name }}
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
       - name: "Save docs zip"
         uses: actions/upload-artifact@v3
         with:
