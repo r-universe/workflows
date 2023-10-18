@@ -7,7 +7,7 @@ on:
         required: false
 
 env:
-  MY_UNIVERSE: https://${{ github.event.repository.name }}.r-universe.dev
+  MY_UNIVERSE: ${{ github.event.repository.name != 'cran' && format('https://{0}.r-universe.dev', github.event.repository.name) || '' }}
   GH_APP_ID: '87942'
 
 jobs:
