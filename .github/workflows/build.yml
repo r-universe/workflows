@@ -107,6 +107,7 @@ jobs:
       version: ${{ steps.build.outputs.VERSION }}
       java: ${{ steps.build.outputs.NEED_RJAVA }}
       jags: ${{ steps.build.outputs.NEED_JAGS }}
+      cmdstan: ${{ steps.build.outputs.NEED_CMDSTAN }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
     steps:
       - id: build
@@ -248,6 +249,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           jags: ${{ needs.source.outputs.jags }}
+          cmdstan: ${{ needs.source.outputs.cmdstan }}
       - name: "Build and check for Windows"
         uses: r-universe-org/build-and-check@windows
         if: runner.os == 'windows'
@@ -257,6 +259,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
+          cmdstan: ${{ needs.source.outputs.cmdstan }}
       - id: postcheck
         name: "Package install log"
         uses: r-universe-org/post-check@master
