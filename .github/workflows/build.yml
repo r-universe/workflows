@@ -5,6 +5,10 @@ on:
         description: Which package or commit to build (default is HEAD commit)
         type: string
         required: false
+      author:
+        description: Email address of author of the package (default uses HEAD commit)
+        type: string
+        required: false
 
 env:
   MY_UNIVERSE: ${{ github.event.repository.name != 'cran' && format('https://{0}.r-universe.dev', github.event.repository.name) || '' }}
@@ -38,6 +42,7 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
 #          github-token: ${{secrets.PUBLIC_PAT}}
           package: ${{ inputs.package }}
+          author: ${{ inputs.author }}
 
   pendingstatus:
     name: Set Status to Pending
