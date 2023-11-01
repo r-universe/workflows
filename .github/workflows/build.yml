@@ -39,7 +39,6 @@ jobs:
     name: Set Status to Pending
     runs-on: ubuntu-22.04
     needs: [prepare]
-    if: needs.prepare.outputs.universe_app
     steps:
       - name: Set upstream commit status
         uses: r-universe-org/commit-status@master
@@ -50,6 +49,7 @@ jobs:
           sha: ${{ needs.prepare.outputs.repo_commit }}
           url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
           universe: ${{ github.event.repository.name }}
+          has_app: ${{ needs.prepare.outputs.universe_app }}
           deployed_packages: 'pending'
         if: inputs.package == ''
 
@@ -310,12 +310,13 @@ jobs:
     name: Set Github Status
     runs-on: ubuntu-22.04
     needs: [prepare, docs, source, deploy, pendingstatus]
-    if: always() && needs.prepare.outputs.universe_app
+    if: always()
     steps:
       - name: Set upstream commit status
         uses: r-universe-org/commit-status@master
         env:
           GH_APP_KEY: ${{ secrets.GH_APP_KEY }}
+          GITHUB_PAT: ${{secrets.GHPAT}}
         with:
           repo: ${{ needs.prepare.outputs.repo_url }}
           sha: ${{ needs.prepare.outputs.repo_commit }}
@@ -325,3 +326,5 @@ jobs:
           source_status: ${{ needs.source.result }}
           docs_status: ${{ needs.docs.result }}
           ostype: ${{ needs.source.outputs.ostype }}
+          package: ${{ needs.source.outputs.package }}
+          has_app: ${{ needs.prepare.outputs.universe_app }}
