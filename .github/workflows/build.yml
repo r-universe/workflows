@@ -26,6 +26,7 @@ jobs:
       maintainer_login: ${{ steps.lookup.outputs.maintainer_login }}
       build_docs: ${{ steps.lookup.outputs.build_docs }}
       skip_binaries: ${{ steps.lookup.outputs.skip_binaries }}
+      is_rebuild: ${{ steps.lookup.outputs.is_rebuild }}
     steps:
       - id: lookup
         name: Find changed package
@@ -328,3 +329,4 @@ jobs:
           ostype: ${{ needs.source.outputs.ostype }}
           package: ${{ needs.source.outputs.package }}
           has_app: ${{ needs.prepare.outputs.universe_app }}
+          is_rebuild: ${{ needs.prepare.outputs.is_rebuild }}
