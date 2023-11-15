@@ -106,6 +106,7 @@ jobs:
       java: ${{ steps.build.outputs.NEED_RJAVA }}
       jags: ${{ steps.build.outputs.NEED_JAGS }}
       cmdstan: ${{ steps.build.outputs.NEED_CMDSTAN }}
+      fortran: ${{ steps.build.outputs.NEED_FORTRAN }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
     steps:
       - id: build
@@ -234,6 +235,7 @@ jobs:
         uses: r-universe-org/macos-actions/prepare-macos@master
         with:
           version: ${{ matrix.r }}
+          fortran: ${{ needs.source.outputs.fortran }}
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
@@ -248,6 +250,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           jags: ${{ needs.source.outputs.jags }}
           cmdstan: ${{ needs.source.outputs.cmdstan }}
+          fortran: ${{ needs.source.outputs.fortran }}
       - name: "Build and check for Windows"
         uses: r-universe-org/build-and-check@windows
         if: runner.os == 'windows'
