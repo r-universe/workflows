@@ -51,6 +51,7 @@ jobs:
           url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
           universe: ${{ github.event.repository.name }}
           has_app: ${{ needs.prepare.outputs.universe_app }}
+          package: ${{ needs.source.outputs.package }}
           deployed_packages: 'pending'
         if: inputs.package == ''
 
