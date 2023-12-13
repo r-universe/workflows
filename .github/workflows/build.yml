@@ -115,6 +115,7 @@ jobs:
         env:
           MAINTAINERLOGIN: ${{ needs.prepare.outputs.maintainer_login }}
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          R_LIBS_USER: "~/pkglib"
         with:
           url: ${{ needs.prepare.outputs.repo_url }}
           ref: ${{ needs.prepare.outputs.repo_commit }}
