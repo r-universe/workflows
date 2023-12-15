@@ -115,7 +115,6 @@ jobs:
         env:
           MAINTAINERLOGIN: ${{ needs.prepare.outputs.maintainer_login }}
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          R_LIBS_USER: "~/pkglib"
         with:
           url: ${{ needs.prepare.outputs.repo_url }}
           ref: ${{ needs.prepare.outputs.repo_commit }}
@@ -157,6 +156,12 @@ jobs:
           path: |
             ${{ steps.build.outputs.BINARYPKG }}
             pkgdata.txt
+      - name: "Save package library"
+        uses: actions/cache/save@v3
+        if: ${{ always() && steps.build.outputs.BINARYPKG }}
+        with:
+          path: pkglib
+          key: ${{ runner.os }}-${{ github.run_id }}
 
   wasm:
     needs: [prepare, source]
