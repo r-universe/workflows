@@ -170,6 +170,11 @@ jobs:
     timeout-minutes: 60
     name: Build for webassembly
     steps:
+      - name: "Restore package library"
+        uses: actions/cache/restore@v3
+        with:
+          path: pkglib
+          key: ${{ runner.os }}-${{ github.run_id }}
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
