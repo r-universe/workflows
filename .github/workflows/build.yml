@@ -227,7 +227,7 @@ jobs:
     steps:
       - name: Prepare macOS system
         if: runner.os == 'macos'
-        uses: r-universe-org/macos-actions/prepare-macos@master
+        uses: r-universe-org/prepare-macos@master
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
