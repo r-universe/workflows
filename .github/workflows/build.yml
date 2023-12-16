@@ -234,7 +234,9 @@ jobs:
         with:
           path: |
             /opt/X11
-          key: ${{ runner.os }}-${{ matrix.r }}-2
+            /opt/gfortran
+            /opt/R/x86_64
+          key: ${{ runner.os }}-${{ matrix.r }}
       - name: Install R
         uses: r-universe-org/actions/setup-r@master
         id: install-r
