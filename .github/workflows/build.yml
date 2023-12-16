@@ -161,7 +161,7 @@ jobs:
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           path: pkglib
-          key: ${{ runner.os }}-${{ github.run_id }}
+          key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
 
   wasm:
     needs: [prepare, source]
@@ -174,7 +174,8 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: pkglib
-          key: ${{ runner.os }}-${{ github.run_id }}
+          key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
+          restore-keys: ${{ runner.os }}-${{ github.run_id }}
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
