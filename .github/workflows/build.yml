@@ -345,3 +345,19 @@ jobs:
           package: ${{ needs.prepare.outputs.repo_name }}
           has_app: ${{ needs.prepare.outputs.universe_app }}
           is_rebuild: ${{ needs.prepare.outputs.is_rebuild }}
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [wasm]
+    if: always()
+    name: Cleanup caches
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: actions-cache delete
+        run: |
+          gh extension install actions/gh-actions-cache
+          gh actions-cache delete ${{ runner.os }}-${{ github.run_id }} --repo ${{ github.repository }} --branch ${{ github.ref }} --confirm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
