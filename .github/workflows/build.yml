@@ -225,18 +225,6 @@ jobs:
           - os: 'windows'
             r: 'devel'
     steps:
-      - name: Before cache
-        if: runner.os == 'macos'
-        uses: r-universe-org/macos-actions/before-cache@master
-      - name: Cache tools
-        if: runner.os == 'macos'
-        uses: actions/cache@v3
-        with:
-          path: |
-            /opt/X11
-            /opt/gfortran
-            /opt/R/x86_64
-          key: ${{ runner.os }}-${{ matrix.r }}
       - name: Install R
         uses: r-universe-org/actions/setup-r@master
         id: install-r
