@@ -225,6 +225,12 @@ jobs:
           - os: 'windows'
             r: 'devel'
     steps:
+      - name: Prepare macOS system
+        if: runner.os == 'macos'
+        uses: r-universe-org/macos-actions/prepare-macos@master
+        with:
+          version: ${{ matrix.r }}
+          fortran: ${{ needs.source.outputs.fortran }}
       - name: Install R
         uses: r-universe-org/actions/setup-r@master
         id: install-r
@@ -232,12 +238,6 @@ jobs:
           r-version: ${{ matrix.r }}
         env:
           NOT_CRAN: false
-      - name: Prepare macOS system
-        if: runner.os == 'macos'
-        uses: r-universe-org/macos-actions/prepare-macos@master
-        with:
-          version: ${{ matrix.r }}
-          fortran: ${{ needs.source.outputs.fortran }}
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
