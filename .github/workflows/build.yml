@@ -163,16 +163,12 @@ jobs:
           path: pkglib
           key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
 
-  crosscompiles:
+  wasm:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
-    name: Build for ${{ matrix.platform }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ 'wasm' ]
+    name: Build for webassembly
     steps:
       - name: "Restore package library"
         uses: actions/cache/restore@v3
@@ -186,10 +182,9 @@ jobs:
           name: package-source
           path: .
       - id: build
-        name: Build binary
-        uses: r-universe-org/build-cross@master
+        name: Build wasm binary
+        uses: r-universe-org/build-wasm@master
         with:
-          container: ghcr.io/r-universe-org/build-${{ matrix.platform }}
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -205,12 +200,12 @@ jobs:
           COMMITINFO: ${{ needs.source.outputs.commitinfo }}
           MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           FILE: ${{ steps.build.outputs.binarypkg }}
-          TARGET: ${{ matrix.platform }}
+          TARGET: "wasm"
       - name: "Save binary package"
         uses: actions/upload-artifact@v3
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
-          name: package-${{ matrix.platform }}-release
+          name: package-wasm-release
           path: |
             ${{ steps.build.outputs.binarypkg }}
             pkgdata.txt
@@ -301,7 +296,7 @@ jobs:
   deploy:
     name: Deploy to package server
     runs-on: ubuntu-22.04
-    needs: [prepare, source, binaries, crosscompiles, docs]
+    needs: [prepare, source, binaries, wasm, docs]
     if: ${{ always() && needs.source.outputs.package }}
     outputs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
