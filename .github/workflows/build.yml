@@ -71,7 +71,7 @@ jobs:
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
       - name: "Save docs zip"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docs-website
           path: docs.zip
@@ -82,7 +82,7 @@ jobs:
     needs: docs
     steps:
       - name: Get artifacts for deployment
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docs-website
       - id: deployment
@@ -121,10 +121,11 @@ jobs:
           subdir: ${{ needs.prepare.outputs.repo_subdir }}
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
-      - name: "Generate pkgdata"
-        uses: r-universe-org/generate-pkgdata@master
+      - name: "Store source package"
+        uses: r-universe-org/store-package@master
         if: ${{ always() && steps.build.outputs.PACKAGE }}
         with:
+          name: package-source
           REPO_URL: ${{ needs.prepare.outputs.repo_url }}
           REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
@@ -135,28 +136,22 @@ jobs:
           MAINTAINERINFO: ${{ steps.build.outputs.MAINTAINERINFO }}
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
-      - name: "Save source package"
-        uses: actions/upload-artifact@v3
-        if: ${{ always() && steps.build.outputs.PACKAGE }}
-        with:
-          name: package-source
-          path: |
-            ${{ steps.build.outputs.SOURCEPKG }}
-            pkgdata.txt
-      - name: "Update pkgdata for linux binary package"
-        if: ${{ always() && steps.build.outputs.BINARYPKG }}
-        run: |
-          echo "TARGET=linux" >> pkgdata.txt
-          echo "FILE=${{steps.build.outputs.BINARYPKG }}" >> pkgdata.txt
-      - name: "Save linux binary package"
-        uses: actions/upload-artifact@v3
+      - name: "Store linux binary package"
+        uses: r-universe-org/store-package@master
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release
-          path: |
-            ${{ steps.build.outputs.BINARYPKG }}
-            pkgdata.txt
-      - name: "Save package library"
+          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
+          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
+          JOB_STATUS: ${{ job.status }}
+          DISTRO: ${{ steps.build.outputs.DISTRO }}
+          PACKAGE: ${{ steps.build.outputs.PACKAGE }}
+          VERSION: ${{ steps.build.outputs.VERSION }}
+          COMMITINFO: ${{ steps.build.outputs.COMMITINFO }}
+          MAINTAINERINFO: ${{ steps.build.outputs.MAINTAINERINFO }}
+          FILE: ${{ steps.build.outputs.BINARYPKG }}
+          TARGET: 'linux'
+      - name: "Cache package library"
         uses: actions/cache/save@v3
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
@@ -177,7 +172,7 @@ jobs:
           key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
           restore-keys: ${{ runner.os }}-${{ github.run_id }}
       - name: Download source package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: package-source
           path: .
@@ -188,10 +183,11 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-      - name: "Generate pkgdata"
-        uses: r-universe-org/generate-pkgdata@master
+      - name: "Store package files"
+        uses: r-universe-org/store-package@master
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
+          name: package-wasm-release
           REPO_URL: ${{ needs.prepare.outputs.repo_url }}
           REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
@@ -201,14 +197,6 @@ jobs:
           MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           FILE: ${{ steps.build.outputs.binarypkg }}
           TARGET: "wasm"
-      - name: "Save binary package"
-        uses: actions/upload-artifact@v3
-        if: ${{ always() && steps.build.outputs.binarypkg }}
-        with:
-          name: package-wasm-release
-          path: |
-            ${{ steps.build.outputs.binarypkg }}
-            pkgdata.txt
 
   binaries:
     needs: [prepare, source]
@@ -239,7 +227,7 @@ jobs:
         env:
           NOT_CRAN: false
       - name: Download source package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: package-source
           path: .
@@ -270,10 +258,11 @@ jobs:
           package: ${{ needs.source.outputs.package }}
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
         if: always()
-      - name: "Generate pkgdata"
-        uses: r-universe-org/generate-pkgdata@master
+      - name: "Store package files"
+        uses: r-universe-org/store-package@master
         if: ${{ always() && steps.postcheck.outputs.binarypkg }}
         with:
+          name: package-${{ matrix.os }}-${{ matrix.r }}
           REPO_URL: ${{ needs.prepare.outputs.repo_url }}
           REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
@@ -284,14 +273,6 @@ jobs:
           MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           FILE: ${{ steps.postcheck.outputs.binarypkg }}
           TARGET: ${{ matrix.os }}
-      - name: "Save binary package"
-        uses: actions/upload-artifact@v3
-        if: ${{ always() && steps.postcheck.outputs.binarypkg }}
-        with:
-          name: package-${{ matrix.os }}-${{ matrix.r }}
-          path: |
-            ${{ steps.postcheck.outputs.binarypkg }}
-            pkgdata.txt
 
   deploy:
     name: Deploy to package server
@@ -302,7 +283,7 @@ jobs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
     steps:
       - name: Get artifacts for deployment
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - id: deployment
         name: Upload packages to server
         uses: r-universe-org/deploy-packages@master
