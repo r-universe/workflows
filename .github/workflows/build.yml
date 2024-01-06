@@ -202,7 +202,7 @@ jobs:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
     runs-on: ${{ matrix.os }}-${{ matrix.os == 'macos' && '11' || 'latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 100
     name: Build R-${{ matrix.r }} for ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -234,6 +234,7 @@ jobs:
       - name: "Build and check binaries"
         uses: r-universe-org/build-and-check@v1
         id: buildandcheck
+        timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
@@ -242,11 +243,6 @@ jobs:
           jags: ${{ needs.source.outputs.jags }}
           cmdstan: ${{ needs.source.outputs.cmdstan }}
           fortran: ${{ needs.source.outputs.fortran }}
-      - name: "Cross compile for MacOS ARM64"
-        if: always() && runner.os == 'macos' && env.R_HOME_CROSS && steps.buildandcheck.outputs.binarypkg
-        uses: r-universe-org/build-and-check/macos-cross@v1
-        with:
-          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
         uses: r-universe-org/store-package@master
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
@@ -262,6 +258,11 @@ jobs:
           MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
           TARGET: ${{ matrix.os }}
+      - name: "Cross compile for MacOS ARM64"
+        if: always() && runner.os == 'macos' && env.R_HOME_CROSS && steps.buildandcheck.outputs.binarypkg
+        uses: r-universe-org/build-and-check/macos-cross@v1
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
 
   deploy:
     name: Deploy to package server
