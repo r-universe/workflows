@@ -231,19 +231,9 @@ jobs:
         with:
           name: package-source
           path: .
-      - name: "Build and check for MacOS"
-        uses: r-universe-org/build-and-check@master
-        if: runner.os != 'windows'
-        env:
-          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-        with:
-          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-          jags: ${{ needs.source.outputs.jags }}
-          cmdstan: ${{ needs.source.outputs.cmdstan }}
-          fortran: ${{ needs.source.outputs.fortran }}
-      - name: "Build and check for Windows"
-        uses: r-universe-org/build-and-check@windows
-        if: runner.os == 'windows'
+      - name: "Build and check binaries"
+        uses: r-universe-org/build-and-check@v1
+        id: buildandcheck
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
@@ -251,16 +241,10 @@ jobs:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           cmdstan: ${{ needs.source.outputs.cmdstan }}
-      - id: postcheck
-        name: "Package install log"
-        uses: r-universe-org/post-check@master
-        with:
-          package: ${{ needs.source.outputs.package }}
-          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-        if: always()
-      - name: "Store package files"
+          fortran: ${{ needs.source.outputs.fortran }}
+      - name: "Save binary package"
         uses: r-universe-org/store-package@master
-        if: ${{ always() && steps.postcheck.outputs.binarypkg }}
+        if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
         with:
           name: package-${{ matrix.os }}-${{ matrix.r }}
           REPO_URL: ${{ needs.prepare.outputs.repo_url }}
@@ -271,7 +255,7 @@ jobs:
           VERSION: ${{ needs.source.outputs.version }}
           COMMITINFO: ${{ needs.source.outputs.commitinfo }}
           MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
-          FILE: ${{ steps.postcheck.outputs.binarypkg }}
+          FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
           TARGET: ${{ matrix.os }}
 
   deploy:
