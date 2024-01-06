@@ -242,6 +242,11 @@ jobs:
           jags: ${{ needs.source.outputs.jags }}
           cmdstan: ${{ needs.source.outputs.cmdstan }}
           fortran: ${{ needs.source.outputs.fortran }}
+      - name: "Cross compile for MacOS ARM64"
+        if: always() && runner.os == 'macos' && env.R_HOME_CROSS && steps.buildandcheck.outputs.binarypkg
+        uses: r-universe-org/build-and-check/macos-cross@v1
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
         uses: r-universe-org/store-package@master
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
