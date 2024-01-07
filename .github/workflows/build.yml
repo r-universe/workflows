@@ -108,6 +108,7 @@ jobs:
       cmdstan: ${{ steps.build.outputs.NEED_CMDSTAN }}
       fortran: ${{ steps.build.outputs.NEED_FORTRAN }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
+      needcompile: ${{ steps.build.outputs.NEEDS_COMPILATION }}
     steps:
       - id: build
         name: Build source package
@@ -259,7 +260,7 @@ jobs:
           FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
           TARGET: ${{ matrix.os }}
       - name: "Cross compile for MacOS ARM64"
-        if: always() && runner.os == 'macos' && env.R_HOME_CROSS && steps.buildandcheck.outputs.binarypkg
+        if: always() && runner.os == 'macos' && env.R_HOME_CROSS && needs.source.outputs.needcompile && steps.buildandcheck.outputs.binarypkg
         uses: r-universe-org/build-and-check/macos-cross@v1
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
