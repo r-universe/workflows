@@ -71,7 +71,7 @@ jobs:
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
       - name: "Save docs zip"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: docs-website
           path: docs.zip
@@ -82,7 +82,7 @@ jobs:
     needs: docs
     steps:
       - name: Get artifacts for deployment
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: docs-website
       - id: deployment
@@ -124,7 +124,7 @@ jobs:
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
       - name: "Store source package"
-        uses: r-universe-org/store-package@v1
+        uses: r-universe-org/store-package@v3
         if: ${{ always() && steps.build.outputs.PACKAGE }}
         with:
           name: package-source
@@ -133,7 +133,7 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/store-package@v1
+        uses: r-universe-org/store-package@v3
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release
@@ -162,7 +162,7 @@ jobs:
           key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
           restore-keys: ${{ runner.os }}-${{ github.run_id }}
       - name: Download source package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: package-source
           path: .
@@ -174,7 +174,7 @@ jobs:
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
       - name: "Store package files"
-        uses: r-universe-org/store-package@v1
+        uses: r-universe-org/store-package@v3
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-release
@@ -211,7 +211,7 @@ jobs:
         env:
           NOT_CRAN: false
       - name: Download source package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: package-source
           path: .
@@ -228,7 +228,7 @@ jobs:
           cmdstan: ${{ needs.source.outputs.cmdstan }}
           fortran: ${{ needs.source.outputs.fortran }}
       - name: "Save binary package"
-        uses: r-universe-org/store-package@v1
+        uses: r-universe-org/store-package@v3
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
         with:
           name: package-${{ matrix.os }}-${{ matrix.r }}
@@ -245,7 +245,7 @@ jobs:
           cargo: ${{ needs.source.outputs.cargo }}
       - name: "Save binary package for MacOS ARM64"
         if: always() && steps.crossbuild.outputs.binarypkg
-        uses: r-universe-org/store-package@v1
+        uses: r-universe-org/store-package@v3
         with:
           name: package-${{ matrix.os }}-${{ matrix.r }}-arm64
           JOB_STATUS: ${{ job.status }}
@@ -262,7 +262,7 @@ jobs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
     steps:
       - name: Get artifacts for deployment
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
       - id: deployment
         name: Upload packages to server
         uses: r-universe-org/deploy-packages@master
