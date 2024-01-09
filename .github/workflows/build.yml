@@ -124,33 +124,21 @@ jobs:
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
       - name: "Store source package"
-        uses: r-universe-org/store-package@master
+        uses: r-universe-org/store-package@v1
         if: ${{ always() && steps.build.outputs.PACKAGE }}
         with:
           name: package-source
-          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
-          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ steps.build.outputs.DISTRO }}
-          PACKAGE: ${{ steps.build.outputs.PACKAGE }}
-          VERSION: ${{ steps.build.outputs.VERSION }}
-          COMMITINFO: ${{ steps.build.outputs.COMMITINFO }}
-          MAINTAINERINFO: ${{ steps.build.outputs.MAINTAINERINFO }}
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/store-package@master
+        uses: r-universe-org/store-package@v1
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release
-          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
-          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ steps.build.outputs.DISTRO }}
-          PACKAGE: ${{ steps.build.outputs.PACKAGE }}
-          VERSION: ${{ steps.build.outputs.VERSION }}
-          COMMITINFO: ${{ steps.build.outputs.COMMITINFO }}
-          MAINTAINERINFO: ${{ steps.build.outputs.MAINTAINERINFO }}
           FILE: ${{ steps.build.outputs.BINARYPKG }}
           TARGET: 'linux'
       - name: "Cache package library"
@@ -186,17 +174,11 @@ jobs:
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
       - name: "Store package files"
-        uses: r-universe-org/store-package@master
+        uses: r-universe-org/store-package@v1
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-release
-          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
-          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
-          PACKAGE: ${{ needs.source.outputs.package }}
-          VERSION: ${{ needs.source.outputs.version }}
-          COMMITINFO: ${{ needs.source.outputs.commitinfo }}
-          MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           FILE: ${{ steps.build.outputs.binarypkg }}
           TARGET: "wasm"
 
@@ -246,18 +228,12 @@ jobs:
           cmdstan: ${{ needs.source.outputs.cmdstan }}
           fortran: ${{ needs.source.outputs.fortran }}
       - name: "Save binary package"
-        uses: r-universe-org/store-package@master
+        uses: r-universe-org/store-package@v1
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
         with:
           name: package-${{ matrix.os }}-${{ matrix.r }}
-          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
-          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ matrix.os }}
-          PACKAGE: ${{ needs.source.outputs.package }}
-          VERSION: ${{ needs.source.outputs.version }}
-          COMMITINFO: ${{ needs.source.outputs.commitinfo }}
-          MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
           TARGET: ${{ matrix.os }}
       - name: "Cross compile for MacOS ARM64"
@@ -269,17 +245,11 @@ jobs:
           cargo: ${{ needs.source.outputs.cargo }}
       - name: "Save binary package for MacOS ARM64"
         if: always() && steps.crossbuild.outputs.binarypkg
-        uses: r-universe-org/store-package@master
+        uses: r-universe-org/store-package@v1
         with:
           name: package-${{ matrix.os }}-${{ matrix.r }}-arm64
-          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
-          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ matrix.os }}
-          PACKAGE: ${{ needs.source.outputs.package }}
-          VERSION: ${{ needs.source.outputs.version }}
-          COMMITINFO: ${{ needs.source.outputs.commitinfo }}
-          MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           FILE: ${{ steps.crossbuild.outputs.binarypkg }}
           TARGET: ${{ matrix.os }}
 
@@ -302,6 +272,12 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           PKGDOCS: ${{ needs.docs.result }}
           SKIP_BINARIES: ${{ needs.prepare.outputs.skip_binaries }}
+          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
+          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
+          COMMITINFO: ${{ needs.source.outputs.commitinfo }}
+          MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
+          PACKAGE: ${{ needs.source.outputs.package }}
+          VERSION: ${{ needs.source.outputs.version }}
 
   finalstatus:
     name: Set Github Status
