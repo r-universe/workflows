@@ -203,6 +203,7 @@ jobs:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
       - name: Install R
+        timeout-minutes: 10
         uses: r-universe-org/actions/setup-r@master
         id: install-r
         with:
