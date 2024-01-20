@@ -202,6 +202,7 @@ jobs:
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
+          jags: ${{ needs.source.outputs.jags }}
       - name: Install R
         timeout-minutes: 10
         uses: r-universe-org/actions/setup-r@master
