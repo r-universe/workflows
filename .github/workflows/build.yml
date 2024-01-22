@@ -30,7 +30,7 @@ jobs:
     steps:
       - id: lookup
         name: Find changed package
-        uses: r-universe-org/find-changes@master
+        uses: r-universe-org/actions/find-changes@v3
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
 #          github-token: ${{secrets.PUBLIC_PAT}}
@@ -123,7 +123,7 @@ jobs:
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
       - name: "Store source package"
-        uses: r-universe-org/store-package@v3
+        uses: r-universe-org/actions/store-package@v3
         if: ${{ always() && steps.build.outputs.PACKAGE }}
         with:
           name: package-source
@@ -132,7 +132,7 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/store-package@v3
+        uses: r-universe-org/actions/store-package@v3
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release
@@ -173,7 +173,7 @@ jobs:
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
       - name: "Store package files"
-        uses: r-universe-org/store-package@v3
+        uses: r-universe-org/actions/store-package@v3
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-release
@@ -181,24 +181,63 @@ jobs:
           FILE: ${{ steps.build.outputs.binarypkg }}
           TARGET: "wasm"
 
-  binaries:
+  windows:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
-    runs-on: ${{ matrix.os }}-${{ matrix.os == 'macos' && '11' || 'latest' }}
+    runs-on: windows-latest
     timeout-minutes: 100
-    name: Build R-${{ matrix.r }} for ${{ matrix.os }}
+    name: Build R-${{ matrix.r }} for Windows
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows, macos ]
+        r: [ 'devel', 'release', 'oldrel' ]
+    steps:
+      - name: Install R
+        timeout-minutes: 10
+        uses: r-universe-org/actions/setup-r@master
+        id: install-r
+        with:
+          r-version: ${{ matrix.r }}
+        env:
+          NOT_CRAN: false
+      - name: Download source package
+        uses: actions/download-artifact@v3
+        with:
+          name: package-source
+          path: .
+      - name: "Build and check binaries"
+        uses: r-universe-org/actions/windows-check@v3
+        id: buildandcheck
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+          java: ${{ needs.source.outputs.java }}
+          jags: ${{ needs.source.outputs.jags }}
+      - name: "Save binary package"
+        uses: r-universe-org/actions/store-package@v3
+        if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
+        with:
+          name: package-windows-${{ matrix.r }}
+          JOB_STATUS: ${{ job.status }}
+          DISTRO: windows
+          FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
+          TARGET: windows
+
+  macos:
+    needs: [prepare, source]
+    if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
+    runs-on: macos-11
+    timeout-minutes: 100
+    name: Build R-${{ matrix.r }} for MacOS
+    strategy:
+      fail-fast: false
+      matrix:
         r: [ 'release', 'oldrel' ]
-        include:
-          - os: 'windows'
-            r: 'devel'
     steps:
       - name: Prepare macOS system
-        if: runner.os == 'macos'
-        uses: r-universe-org/prepare-macos@master
+        uses: r-universe-org/actions/macos-prep@v3
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
@@ -217,7 +256,7 @@ jobs:
           name: package-source
           path: .
       - name: "Build and check binaries"
-        uses: r-universe-org/build-and-check@v1
+        uses: r-universe-org/actions/macos-check@v3
         id: buildandcheck
         timeout-minutes: 60
         env:
@@ -226,38 +265,36 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
-          cmdstan: ${{ needs.source.outputs.cmdstan }}
-          fortran: ${{ needs.source.outputs.fortran }}
       - name: "Save binary package"
-        uses: r-universe-org/store-package@v3
+        uses: r-universe-org/actions/store-package@v3
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
         with:
-          name: package-${{ matrix.os }}-${{ matrix.r }}
+          name: package-macos-${{ matrix.r }}
           JOB_STATUS: ${{ job.status }}
-          DISTRO: ${{ matrix.os }}
+          DISTRO: macos
           FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
-          TARGET: ${{ matrix.os }}
+          TARGET: macos
       - name: "Cross compile for MacOS ARM64"
         id: crossbuild
-        if: always() && runner.os == 'macos' && env.R_HOME_CROSS && steps.buildandcheck.outputs.hasplatform
-        uses: r-universe-org/build-and-check/macos-cross@v1
+        if: always() && env.R_HOME_CROSS && steps.buildandcheck.outputs.hasplatform
+        uses: r-universe-org/actions/macos-cross@v3
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           cargo: ${{ needs.source.outputs.cargo }}
       - name: "Save binary package for MacOS ARM64"
         if: always() && steps.crossbuild.outputs.binarypkg
-        uses: r-universe-org/store-package@v3
+        uses: r-universe-org/actions/store-package@v3
         with:
-          name: package-${{ matrix.os }}-${{ matrix.r }}-arm64
+          name: package-macos-${{ matrix.r }}-arm64
           JOB_STATUS: ${{ job.status }}
-          DISTRO: ${{ matrix.os }}
+          DISTRO: macos
           FILE: ${{ steps.crossbuild.outputs.binarypkg }}
-          TARGET: ${{ matrix.os }}
+          TARGET: macos
 
   deploy:
     name: Deploy to package server
     runs-on: ubuntu-22.04
-    needs: [prepare, source, binaries, wasm, docs]
+    needs: [prepare, source, windows, macos, wasm, docs]
     if: ${{ always() && needs.source.outputs.package }}
     outputs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
