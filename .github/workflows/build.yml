@@ -194,12 +194,10 @@ jobs:
     steps:
       - name: Install R
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@master
+        uses: r-universe-org/actions/setup-r@v3
         id: install-r
         with:
           r-version: ${{ matrix.r }}
-        env:
-          NOT_CRAN: false
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
@@ -244,12 +242,10 @@ jobs:
           jags: ${{ needs.source.outputs.jags }}
       - name: Install R
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@master
+        uses: r-universe-org/actions/setup-r@v3
         id: install-r
         with:
           r-version: ${{ matrix.r }}
-        env:
-          NOT_CRAN: false
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
