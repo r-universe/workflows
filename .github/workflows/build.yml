@@ -198,6 +198,11 @@ jobs:
         id: install-r
         with:
           r-version: ${{ matrix.r }}
+      - name: "Prepare build tools"
+        uses: r-universe-org/actions/windows-prep@v3
+        with:
+          java: ${{ needs.source.outputs.java }}
+          jags: ${{ needs.source.outputs.jags }}
       - name: Download source package
         uses: actions/download-artifact@v3
         with:
@@ -211,8 +216,6 @@ jobs:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-          java: ${{ needs.source.outputs.java }}
-          jags: ${{ needs.source.outputs.jags }}
       - name: "Save binary package"
         uses: r-universe-org/actions/store-package@v3
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
