@@ -111,6 +111,7 @@ jobs:
       ostype: ${{ steps.build.outputs.OSTYPE }}
     steps:
       - id: build
+        timeout-minutes: 60
         name: Build source package
         uses: r-universe-org/build-source@master
         env:
