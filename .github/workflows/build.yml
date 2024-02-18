@@ -236,7 +236,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'release', 'oldrel' ]
+        r: [ 'devel', 'release', 'oldrel' ]
     steps:
       - name: Prepare macOS system
         uses: r-universe-org/actions/macos-prep@v4
