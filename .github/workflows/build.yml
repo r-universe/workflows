@@ -57,7 +57,7 @@ jobs:
 
   docs:
     needs: prepare
-    name: Build package documentation
+    name: Build pkgdown site (ropensci only)
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: needs.prepare.outputs.build_docs
