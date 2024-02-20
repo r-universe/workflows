@@ -307,7 +307,6 @@ jobs:
         env:
           CRANLIKEURL: https://${{ github.event.repository.name }}.r-universe.dev/packages
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           PKGDOCS: ${{ needs.docs.result }}
           SKIP_BINARIES: ${{ needs.prepare.outputs.skip_binaries }}
           REPO_URL: ${{ needs.prepare.outputs.repo_url }}
@@ -316,6 +315,12 @@ jobs:
           MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
           PACKAGE: ${{ needs.source.outputs.package }}
           VERSION: ${{ needs.source.outputs.version }}
+      - name: Report deployment failures in slack
+        if: failure()
+        uses: r-universe-org/actions/post-slack@v4
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          DEPLOY_STATUS: ${{ steps.deployment.outcome }}
 
   finalstatus:
     name: Set Github Status
