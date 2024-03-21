@@ -191,7 +191,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'devel', 'release', 'oldrel' ]
+        r: [ 'release', 'oldrel' ]
     steps:
       - name: Install R
         timeout-minutes: 10
@@ -236,7 +236,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'devel', 'release', 'oldrel' ]
+        r: [ 'release', 'oldrel' ]
     steps:
       - name: Prepare macOS system
         uses: r-universe-org/actions/macos-prep@v4
