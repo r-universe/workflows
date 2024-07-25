@@ -108,6 +108,7 @@ jobs:
       jags: ${{ steps.build.outputs.NEED_JAGS }}
       cmdstan: ${{ steps.build.outputs.NEED_CMDSTAN }}
       fortran: ${{ steps.build.outputs.NEED_FORTRAN }}
+      golang: ${{ steps.build.outputs.NEED_GOLANG }}
       cargo: ${{ steps.build.outputs.NEED_CARGO }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
     steps:
@@ -288,6 +289,7 @@ jobs:
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
+          golang: ${{ needs.source.outputs.golang }}
           jags: ${{ needs.source.outputs.jags }}
       - name: Install R
         timeout-minutes: 10
