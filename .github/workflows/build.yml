@@ -111,6 +111,7 @@ jobs:
       golang: ${{ steps.build.outputs.NEED_GOLANG }}
       cargo: ${{ steps.build.outputs.NEED_CARGO }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - id: build
         timeout-minutes: 60
@@ -149,6 +150,13 @@ jobs:
         with:
           path: pkglib
           key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
+      - id: matrix
+        run: |
+          if [ "${{ steps.build.outputs.NEEDS_COMPILATION }}" ]; then
+          echo 'matrix=["x86_64","arm64"]' >> $GITHUB_OUTPUT
+          else
+          echo 'matrix=["arm64"]' >> $GITHUB_OUTPUT
+          fi
 
   linux:
     needs: [prepare, source]
@@ -283,7 +291,7 @@ jobs:
       fail-fast: false
       matrix:
         r: [ 'release', 'oldrel' ]
-        arch: [ 'x86_64', 'arm64' ]
+        arch: ${{fromJson(needs.source.outputs.matrix)}}
     steps:
       - name: Prepare macOS system
         uses: r-universe-org/actions/macos-prep@v5
