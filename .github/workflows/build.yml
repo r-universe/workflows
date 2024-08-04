@@ -297,7 +297,6 @@ jobs:
         uses: r-universe-org/actions/macos-prep@v5
         with:
           version: ${{ matrix.r }}
-          arch: ${{ matrix.arch }}
           fortran: ${{ needs.source.outputs.fortran }}
           golang: ${{ needs.source.outputs.golang }}
           jags: ${{ needs.source.outputs.jags }}
