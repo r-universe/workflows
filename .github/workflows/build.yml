@@ -31,7 +31,7 @@ jobs:
     steps:
       - id: lookup
         name: Find changed package
-        uses: r-universe-org/actions/find-changes@v4
+        uses: r-universe-org/actions/find-changes@v5
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
 #          github-token: ${{secrets.PUBLIC_PAT}}
@@ -111,6 +111,8 @@ jobs:
       golang: ${{ steps.build.outputs.NEED_GOLANG }}
       cargo: ${{ steps.build.outputs.NEED_CARGO }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
+      compiled: ${{ steps.build.outputs.NEEDS_COMPILATION }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - id: build
         timeout-minutes: 60
@@ -126,7 +128,7 @@ jobs:
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
       - name: "Store source package"
-        uses: r-universe-org/actions/store-package@v4
+        uses: r-universe-org/actions/store-package@v5
         if: ${{ always() && steps.build.outputs.PACKAGE }}
         with:
           name: package-source
@@ -135,7 +137,7 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/actions/store-package@v4
+        uses: r-universe-org/actions/store-package@v5
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release
@@ -149,6 +151,14 @@ jobs:
         with:
           path: pkglib
           key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
+      - id: matrix
+        if: always()
+        run: |
+          if [ "${{ steps.build.outputs.NEEDS_COMPILATION }}" ]; then
+          echo 'matrix=["x86_64","arm64"]' >> $GITHUB_OUTPUT
+          else
+          echo 'matrix=["arm64"]' >> $GITHUB_OUTPUT
+          fi
 
   linux:
     needs: [prepare, source]
@@ -169,7 +179,7 @@ jobs:
           name: package-source
           path: .
       - name: "Build and check binaries"
-        uses: r-universe-org/actions/linux-check@v4
+        uses: r-universe-org/actions/linux-check@v5
         id: build
         timeout-minutes: 60
         env:
@@ -177,7 +187,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
-        uses: r-universe-org/actions/store-package@v4
+        uses: r-universe-org/actions/store-package@v5
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-linux-${{ matrix.r }}
@@ -219,7 +229,7 @@ jobs:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           SOURCEPKG: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store package files"
-        uses: r-universe-org/actions/store-package@v4
+        uses: r-universe-org/actions/store-package@v5
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-${{ matrix.r }}
@@ -240,12 +250,12 @@ jobs:
     steps:
       - name: Install R
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v4
+        uses: r-universe-org/actions/setup-r@v5
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Prepare build tools"
-        uses: r-universe-org/actions/windows-prep@v4
+        uses: r-universe-org/actions/windows-prep@v5
         with:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
@@ -255,7 +265,7 @@ jobs:
           name: package-source
           path: .
       - name: "Build and check binaries"
-        uses: r-universe-org/actions/windows-check@v4
+        uses: r-universe-org/actions/windows-check@v5
         id: buildandcheck
         timeout-minutes: 60
         env:
@@ -263,7 +273,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
-        uses: r-universe-org/actions/store-package@v4
+        uses: r-universe-org/actions/store-package@v5
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
         with:
           name: package-windows-${{ matrix.r }}
@@ -276,16 +286,17 @@ jobs:
   macos:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
-    runs-on: macos-13
+    runs-on: macos-${{ matrix.arch == 'x86_64' && '13' || '14' }}
     timeout-minutes: 100
-    name: Build R-${{ matrix.r }} for MacOS
+    name: Build R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
       matrix:
         r: [ 'release', 'oldrel' ]
+        arch: ${{fromJson(needs.source.outputs.matrix)}}
     steps:
       - name: Prepare macOS system
-        uses: r-universe-org/actions/macos-prep@v4
+        uses: r-universe-org/actions/macos-prep@v5
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
@@ -293,7 +304,7 @@ jobs:
           jags: ${{ needs.source.outputs.jags }}
       - name: Install R
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v4
+        uses: r-universe-org/actions/setup-r@v5
         id: install-r
         with:
           r-version: ${{ matrix.r }}
@@ -303,7 +314,7 @@ jobs:
           name: package-source
           path: .
       - name: "Build and check binaries"
-        uses: r-universe-org/actions/macos-check@v4
+        uses: r-universe-org/actions/macos-check@v5
         id: buildandcheck
         timeout-minutes: 60
         env:
@@ -313,30 +324,13 @@ jobs:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
       - name: "Save binary package"
-        uses: r-universe-org/actions/store-package@v4
+        uses: r-universe-org/actions/store-package@v5
         if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
         with:
-          name: package-macos-${{ matrix.r }}
+          name: package-macos-${{ matrix.r }}-${{ matrix.arch }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: macos
           FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
-          CHECKSTATUS: ${{ steps.buildandcheck.outputs.checkstatus }}
-          TARGET: macos
-      - name: "Cross compile for MacOS ARM64"
-        id: crossbuild
-        if: always() && env.R_HOME_CROSS && steps.buildandcheck.outputs.hasplatform
-        uses: r-universe-org/actions/macos-cross@v4
-        with:
-          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-          cargo: ${{ needs.source.outputs.cargo }}
-      - name: "Save binary package for MacOS ARM64"
-        if: always() && steps.crossbuild.outputs.binarypkg
-        uses: r-universe-org/actions/store-package@v4
-        with:
-          name: package-macos-${{ matrix.r }}-arm64
-          JOB_STATUS: ${{ job.status }}
-          DISTRO: macos
-          FILE: ${{ steps.crossbuild.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.buildandcheck.outputs.checkstatus }}
           TARGET: macos
 
@@ -366,7 +360,7 @@ jobs:
           VERSION: ${{ needs.source.outputs.version }}
       - name: Report deployment failures in slack
         if: failure()
-        uses: r-universe-org/actions/post-slack@v4
+        uses: r-universe-org/actions/post-slack@v5
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           DEPLOY_STATUS: ${{ steps.deployment.outcome }}
