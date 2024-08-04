@@ -111,6 +111,7 @@ jobs:
       golang: ${{ steps.build.outputs.NEED_GOLANG }}
       cargo: ${{ steps.build.outputs.NEED_CARGO }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
+      compiled: ${{ steps.build.outputs.NEEDS_COMPILATION }}
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - id: build
@@ -286,7 +287,7 @@ jobs:
     if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
     runs-on: macos-${{ matrix.arch == 'x86_64' && '13' || '14' }}
     timeout-minutes: 100
-    name: Build R-${{ matrix.r }}-${{ matrix.arch }} for MacOS
+    name: Build R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
       matrix:
