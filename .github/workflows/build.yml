@@ -342,7 +342,12 @@ jobs:
     outputs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
     steps:
-      - name: Get artifacts for deployment
+      - id: download
+        continue-on-error: true
+        name: Download artifacts for deployment
+        uses: actions/download-artifact@v4
+      - if: steps.download.outcome == 'failure'
+        name: Retry to download artifacts for deployment
         uses: actions/download-artifact@v4
       - id: deployment
         name: Upload packages to server
