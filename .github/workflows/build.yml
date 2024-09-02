@@ -25,6 +25,7 @@ jobs:
       repo_registered: ${{ steps.lookup.outputs.repo_registered }}
       universe_app: ${{ steps.lookup.outputs.universe_app }}
       maintainer_login: ${{ steps.lookup.outputs.maintainer_login }}
+      maintainer_uuid: ${{ steps.lookup.outputs.maintainer_uuid }}
       build_docs: ${{ steps.lookup.outputs.build_docs }}
       skip_binaries: ${{ steps.lookup.outputs.skip_binaries }}
       is_rebuild: ${{ steps.lookup.outputs.is_rebuild }}
@@ -120,6 +121,7 @@ jobs:
         uses: r-universe-org/build-source@master
         env:
           MAINTAINERLOGIN: ${{ needs.prepare.outputs.maintainer_login }}
+          MAINTAINERUUID: ${{ needs.prepare.outputs.maintainer_uuid }}
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           DUMMY_SESSION: ${{secrets.DUMMY_SESSION}}
         with:
