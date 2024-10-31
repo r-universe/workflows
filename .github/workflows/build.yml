@@ -115,6 +115,8 @@ jobs:
       compiled: ${{ steps.build.outputs.NEEDS_COMPILATION }}
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
+      - name: Free disk space on runner
+        run: rm -Rf /usr/share/dotnet /opt/ghc "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY" || true
       - id: build
         timeout-minutes: 60
         name: Build source package (including vignettes)
