@@ -111,6 +111,7 @@ jobs:
       fortran: ${{ steps.build.outputs.NEED_FORTRAN }}
       golang: ${{ steps.build.outputs.NEED_GOLANG }}
       cargo: ${{ steps.build.outputs.NEED_CARGO }}
+      quarto: ${{ steps.build.outputs.NEED_QUARTO }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
       compiled: ${{ steps.build.outputs.NEEDS_COMPILATION }}
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -265,6 +266,7 @@ jobs:
         with:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
+          quarto: ${{ needs.source.outputs.quarto }}
       - name: Download source package
         uses: actions/download-artifact@v4
         with:
@@ -308,6 +310,7 @@ jobs:
           fortran: ${{ needs.source.outputs.fortran }}
           golang: ${{ needs.source.outputs.golang }}
           jags: ${{ needs.source.outputs.jags }}
+          quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R
         timeout-minutes: 10
         uses: r-universe-org/actions/setup-r@v5
