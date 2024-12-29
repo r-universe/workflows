@@ -362,7 +362,6 @@ jobs:
         name: Upload packages to server
         uses: r-universe-org/deploy-packages@master
         env:
-          CRANLIKEURL: https://${{ github.event.repository.name }}.r-universe.dev/packages
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
           PKGDOCS: ${{ needs.docs.result }}
           SKIP_BINARIES: ${{ needs.prepare.outputs.skip_binaries }}
