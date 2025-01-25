@@ -300,7 +300,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'release', 'oldrel' ]
+        r: [ 'devel', 'release', 'oldrel' ]
         arch: ${{fromJson(needs.source.outputs.matrix)}}
     steps:
       - name: Prepare macOS system
