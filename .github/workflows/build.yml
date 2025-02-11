@@ -29,6 +29,8 @@ jobs:
       build_docs: ${{ steps.lookup.outputs.build_docs }}
       skip_binaries: ${{ steps.lookup.outputs.skip_binaries }}
       is_rebuild: ${{ steps.lookup.outputs.is_rebuild }}
+      cran_version: ${{ steps.lookup.outputs.cran_version }}
+
     steps:
       - id: lookup
         name: Find changed package
@@ -127,6 +129,7 @@ jobs:
           MAINTAINERUUID: ${{ needs.prepare.outputs.maintainer_uuid }}
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           DUMMY_SESSION: ${{secrets.DUMMY_SESSION}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           url: ${{ needs.prepare.outputs.repo_url }}
           ref: ${{ needs.prepare.outputs.repo_commit }}
@@ -190,6 +193,7 @@ jobs:
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
@@ -235,6 +239,7 @@ jobs:
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           SOURCEPKG: ${{ needs.source.outputs.sourcepkg }}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
       - name: "Store package files"
         uses: r-universe-org/actions/store-package@v5
         if: ${{ always() && steps.build.outputs.binarypkg }}
@@ -278,6 +283,7 @@ jobs:
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
@@ -328,6 +334,7 @@ jobs:
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           java: ${{ needs.source.outputs.java }}
