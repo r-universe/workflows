@@ -30,6 +30,7 @@ jobs:
       skip_binaries: ${{ steps.lookup.outputs.skip_binaries }}
       is_rebuild: ${{ steps.lookup.outputs.is_rebuild }}
       cran_version: ${{ steps.lookup.outputs.cran_version }}
+      registry_metadata: ${{ steps.lookup.outputs.registry_metadata }}
 
     steps:
       - id: lookup
@@ -130,6 +131,7 @@ jobs:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           DUMMY_SESSION: ${{secrets.DUMMY_SESSION}}
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+          REGISTRY_METADATA: ${{ needs.prepare.outputs.registry_metadata }}
         with:
           url: ${{ needs.prepare.outputs.repo_url }}
           ref: ${{ needs.prepare.outputs.repo_commit }}
