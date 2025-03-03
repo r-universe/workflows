@@ -14,7 +14,7 @@ env:
 jobs:
   prepare:
     name: Determine package to build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: "!contains(github.event.head_commit.message, 'Deleting packages')"
     outputs:
       repo_url: ${{ steps.lookup.outputs.repo_url }}
@@ -43,7 +43,7 @@ jobs:
 
   pendingstatus:
     name: Set Status to Pending
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [prepare]
     steps:
       - name: Set upstream commit status
@@ -63,7 +63,7 @@ jobs:
   docs:
     needs: prepare
     name: Build pkgdown site (ropensci only)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     if: needs.prepare.outputs.build_docs
     steps:
@@ -83,7 +83,7 @@ jobs:
 
   deploydocs:
     name: Deploy to docs server
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: docs
     steps:
       - name: Get artifacts for deployment
@@ -100,7 +100,7 @@ jobs:
   source:
     needs: prepare
     name: Build source pkg and vignettes
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     outputs:
       commitinfo: ${{ steps.build.outputs.COMMITINFO }}
@@ -174,7 +174,7 @@ jobs:
   linux:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     name: Build R-${{ matrix.r }} for Linux
     strategy:
@@ -212,7 +212,7 @@ jobs:
   wasm:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     name: Build R-${{ matrix.r }} for WebAssembly
     strategy:
@@ -354,7 +354,7 @@ jobs:
 
   deploy:
     name: Deploy to package server
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [prepare, source, linux, windows, macos, wasm, docs]
     if: ${{ always() && needs.source.outputs.package }}
     outputs:
@@ -389,7 +389,7 @@ jobs:
 
   finalstatus:
     name: Set Github Status
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [prepare, docs, source, deploy, pendingstatus]
     if: always()
     steps:
