@@ -180,7 +180,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'devel' ]
+        r: [ 'devel', 'release' ]
     container:
       image: ghcr.io/r-universe-org/base-image:${{ matrix.r }}
     steps:
@@ -203,6 +203,7 @@ jobs:
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-linux-${{ matrix.r }}
+          overwrite: ${{ matrix.r == 'release' }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ steps.build.outputs.distro }}
           FILE: ${{ steps.build.outputs.binarypkg }}
