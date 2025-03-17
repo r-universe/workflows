@@ -35,7 +35,7 @@ jobs:
     steps:
       - id: lookup
         name: Find changed package
-        uses: r-universe-org/actions/find-changes@v5
+        uses: r-universe-org/actions/find-changes@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
 #          github-token: ${{secrets.PUBLIC_PAT}}
@@ -139,7 +139,7 @@ jobs:
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
       - name: "Store source package"
-        uses: r-universe-org/actions/store-package@v5
+        uses: r-universe-org/actions/store-package@v6
         if: ${{ always() && steps.build.outputs.PACKAGE }}
         with:
           name: package-source
@@ -148,7 +148,7 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/actions/store-package@v5
+        uses: r-universe-org/actions/store-package@v6
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release
@@ -189,25 +189,32 @@ jobs:
         with:
           name: package-source
           path: .
-      - name: "Build and check binaries"
-        uses: r-universe-org/actions/linux-check@v5
-        id: build
+      - name: "Get dependencies and build package"
+        uses: r-universe-org/actions/linux-build@v6
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+      - name: "R CMD check"
+        uses: r-universe-org/actions/linux-check@v6
+        id: check
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
-        uses: r-universe-org/actions/store-package@v5
-        if: ${{ always() && steps.build.outputs.binarypkg }}
+        uses: r-universe-org/actions/store-package@v6
+        if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-linux-${{ matrix.r }}
           overwrite: ${{ matrix.r == 'release' }}
           JOB_STATUS: ${{ job.status }}
-          DISTRO: ${{ steps.build.outputs.distro }}
-          FILE: ${{ steps.build.outputs.binarypkg }}
-          CHECKSTATUS: ${{ steps.build.outputs.checkstatus }}
+          DISTRO: ${{ steps.check.outputs.distro }}
+          FILE: ${{ steps.check.outputs.binarypkg }}
+          CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: 'linux'
 
   wasm:
@@ -244,7 +251,7 @@ jobs:
           SOURCEPKG: ${{ needs.source.outputs.sourcepkg }}
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
       - name: "Store package files"
-        uses: r-universe-org/actions/store-package@v5
+        uses: r-universe-org/actions/store-package@v6
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-${{ matrix.r }}
@@ -265,12 +272,13 @@ jobs:
     steps:
       - name: Install R
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v5
+        uses: r-universe-org/actions/setup-r@v6
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Prepare build tools"
-        uses: r-universe-org/actions/windows-prep@v5
+        timeout-minutes: 10
+        uses: r-universe-org/actions/windows-prep@v6
         with:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
@@ -280,9 +288,18 @@ jobs:
         with:
           name: package-source
           path: .
-      - name: "Build and check binaries"
-        uses: r-universe-org/actions/windows-check@v5
-        id: buildandcheck
+      - name: "Get dependencies and build package"
+        uses: r-universe-org/actions/windows-build@v6
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+          ostype: ${{ needs.source.outputs.ostype }}
+      - name: "R CMD check"
+        uses: r-universe-org/actions/windows-check@v6
+        id: check
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -290,14 +307,14 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
-        uses: r-universe-org/actions/store-package@v5
-        if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
+        uses: r-universe-org/actions/store-package@v6
+        if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-windows-${{ matrix.r }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: windows
-          FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
-          CHECKSTATUS: ${{ steps.buildandcheck.outputs.checkstatus }}
+          FILE: ${{ steps.check.outputs.binarypkg }}
+          CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: windows
 
   macos:
@@ -313,7 +330,8 @@ jobs:
         arch: ${{fromJson(needs.source.outputs.matrix)}}
     steps:
       - name: Prepare macOS system
-        uses: r-universe-org/actions/macos-prep@v5
+        timeout-minutes: 10
+        uses: r-universe-org/actions/macos-prep@v6
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
@@ -322,7 +340,7 @@ jobs:
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v5
+        uses: r-universe-org/actions/setup-r@v6
         id: install-r
         with:
           r-version: ${{ matrix.r }}
@@ -331,26 +349,31 @@ jobs:
         with:
           name: package-source
           path: .
-      - name: "Build and check binaries"
-        uses: r-universe-org/actions/macos-check@v5
-        id: buildandcheck
+      - name: "Get dependencies and build package"
+        uses: r-universe-org/actions/macos-build@v6
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-          java: ${{ needs.source.outputs.java }}
-          jags: ${{ needs.source.outputs.jags }}
+      - name: "R CMD check"
+        uses: r-universe-org/actions/macos-check@v6
+        id: check
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Save binary package"
-        uses: r-universe-org/actions/store-package@v5
-        if: ${{ always() && steps.buildandcheck.outputs.binarypkg }}
+        uses: r-universe-org/actions/store-package@v6
+        if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-macos-${{ matrix.r }}-${{ matrix.arch }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: macos
-          FILE: ${{ steps.buildandcheck.outputs.binarypkg }}
-          CHECKSTATUS: ${{ steps.buildandcheck.outputs.checkstatus }}
+          FILE: ${{ steps.check.outputs.binarypkg }}
+          CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: macos
 
   deploy:
@@ -383,7 +406,7 @@ jobs:
           VERSION: ${{ needs.source.outputs.version }}
       - name: Report deployment failures in slack
         if: failure()
-        uses: r-universe-org/actions/post-slack@v5
+        uses: r-universe-org/actions/post-slack@v6
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           DEPLOY_STATUS: ${{ steps.deployment.outcome }}
