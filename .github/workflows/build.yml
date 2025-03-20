@@ -250,6 +250,7 @@ jobs:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
           SOURCEPKG: ${{ needs.source.outputs.sourcepkg }}
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+          NEED_CARGO: ${{ needs.source.outputs.cargo }}
       - name: "Store package files"
         uses: r-universe-org/actions/store-package@v6
         if: ${{ always() && steps.build.outputs.binarypkg }}
