@@ -189,7 +189,7 @@ jobs:
         with:
           name: package-source
           path: .
-      - name: "Build package"
+      - name: "Build package for Linux"
         uses: r-universe-org/actions/linux-build@v6
         timeout-minutes: 60
         env:
@@ -244,7 +244,7 @@ jobs:
           name: package-source
           path: .
       - id: build
-        name: Build wasm binary
+        name: "Build package for WebAssembly"
         run: /entrypoint.sh
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -289,7 +289,7 @@ jobs:
         with:
           name: package-source
           path: .
-      - name: "Build package"
+      - name: "Build package for Windows"
         uses: r-universe-org/actions/windows-build@v6
         timeout-minutes: 60
         env:
@@ -350,7 +350,7 @@ jobs:
         with:
           name: package-source
           path: .
-      - name: "Build package"
+      - name: "Build package for MacOS"
         uses: r-universe-org/actions/macos-build@v6
         timeout-minutes: 60
         env:
