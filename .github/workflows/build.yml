@@ -187,7 +187,7 @@ jobs:
       - name: "Prepare Linux system"
         timeout-minutes: 10
         uses: r-universe-org/actions/linux-prep@v7
-      - name: Build "${{needs.source.outputs.package}}" for Linux
+      - name: Build package "${{needs.source.outputs.package}}"
         uses: r-universe-org/actions/linux-build@v7
         timeout-minutes: 60
         env:
@@ -236,11 +236,11 @@ jobs:
           key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
           restore-keys: ${{ runner.os }}-${{ github.run_id }}
           enableCrossOsArchive: true
-      - name: "Prepare Linux system"
+      - name: "Prepare WebAssembly system"
         timeout-minutes: 10
         uses: r-universe-org/actions/linux-prep@v7
       - id: build
-        name: Build "${{needs.source.outputs.package}}" for WebAssembly
+        name: Build package "${{needs.source.outputs.package}}"
         run: /entrypoint.sh
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -274,13 +274,13 @@ jobs:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
-      - name: Install R
+      - name: Install R-${{matrix.r}} for Windows
         timeout-minutes: 10
         uses: r-universe-org/actions/setup-r@v7
         id: install-r
         with:
           r-version: ${{ matrix.r }}
-      - name: Build "${{needs.source.outputs.package}}" for Windows
+      - name: Build package "${{needs.source.outputs.package}}"
         uses: r-universe-org/actions/windows-build@v7
         timeout-minutes: 60
         env:
@@ -330,13 +330,13 @@ jobs:
           golang: ${{ needs.source.outputs.golang }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
-      - name: Install R
+      - name: Install R-${{matrix.r}} for MacOS
         timeout-minutes: 10
         uses: r-universe-org/actions/setup-r@v7
         id: install-r
         with:
           r-version: ${{ matrix.r }}
-      - name: Build "${{needs.source.outputs.package}}" for MacOS
+      - name: Build package "${{needs.source.outputs.package}}"
         uses: r-universe-org/actions/macos-build@v7
         timeout-minutes: 60
         env:
