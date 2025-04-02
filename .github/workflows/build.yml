@@ -267,12 +267,6 @@ jobs:
       matrix:
         r: [ 'devel', 'release', 'oldrel' ]
     steps:
-      - name: Install R
-        timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v7
-        id: install-r
-        with:
-          r-version: ${{ matrix.r }}
       - name: "Prepare Windows system"
         timeout-minutes: 10
         uses: r-universe-org/actions/windows-prep@v7
@@ -280,6 +274,12 @@ jobs:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
+      - name: Install R
+        timeout-minutes: 10
+        uses: r-universe-org/actions/setup-r@v7
+        id: install-r
+        with:
+          r-version: ${{ matrix.r }}
       - name: Build "${{needs.source.outputs.package}}" for Windows
         uses: r-universe-org/actions/windows-build@v7
         timeout-minutes: 60
