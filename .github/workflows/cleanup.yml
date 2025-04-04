@@ -1,5 +1,8 @@
 on:
   workflow_call:
+    secrets:
+      CRANLIKEPWD:
+      BOT_TOKEN:
 
 jobs:
   update:
@@ -12,4 +15,4 @@ jobs:
           universe: ${{ github.event.repository.name }}
         env:
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
-          GITHUB_PAT: ${{ secrets.GHPAT }}
+          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}

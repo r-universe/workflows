@@ -5,6 +5,12 @@ on:
         description: Which package or commit to build (default is HEAD commit)
         type: string
         required: false
+    secrets:
+      DUMMY_SESSION:
+      CRANLIKEPWD:
+      GH_APP_KEY:
+      SLACK_TOKEN:
+      BOT_TOKEN:
 
 env:
   UNIVERSE_NAME:  ${{ github.event.repository.name}}
@@ -95,7 +101,7 @@ jobs:
         uses: r-universe-org/deploy-docs@master
         env:
           BUILDLOG: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          GITHUB_PAT: ${{ secrets.GHPAT }}
+          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
 
   source:
     needs: prepare
@@ -408,7 +414,7 @@ jobs:
         uses: r-universe-org/commit-status@master
         env:
           GH_APP_KEY: ${{ secrets.GH_APP_KEY }}
-          GITHUB_PAT: ${{secrets.GHPAT}}
+#          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
         with:
           repo: ${{ needs.prepare.outputs.repo_url }}
           sha: ${{ needs.prepare.outputs.repo_commit }}
