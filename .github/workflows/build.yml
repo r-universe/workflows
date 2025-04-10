@@ -386,7 +386,7 @@ jobs:
         uses: actions/download-artifact@v4
       - id: deployment
         name: Upload packages to server
-        uses: r-universe-org/deploy-packages@master
+        uses: r-universe-org/actions/deploy-packages@v7
         env:
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
           PKGDOCS: ${{ needs.docs.result }}
