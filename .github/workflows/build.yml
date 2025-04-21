@@ -42,7 +42,7 @@ jobs:
     steps:
       - id: lookup
         name: Find changed package
-        uses: r-universe-org/actions/find-changes@v8
+        uses: r-universe-org/actions/find-changes@v9
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
 #          github-token: ${{secrets.PUBLIC_PAT}}
@@ -146,7 +146,7 @@ jobs:
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
       - name: "Store source package"
-        uses: r-universe-org/actions/store-package@v8
+        uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.build.outputs.PACKAGE }}
         with:
           name: package-source
@@ -155,7 +155,7 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/actions/store-package@v8
+        uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release
@@ -182,7 +182,7 @@ jobs:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     name: Build R-${{ matrix.r }} for Linux
     strategy:
       fail-fast: false
@@ -193,9 +193,18 @@ jobs:
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v8
+        uses: r-universe-org/actions/linux-prep@v9
+      - name: "Get dependences"
+        id: deps
+        uses: r-universe-org/actions/linux-deps@v9
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/linux-build@v8
+        uses: r-universe-org/actions/linux-build@v9
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -203,7 +212,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/linux-check@v8
+        uses: r-universe-org/actions/linux-check@v9
         id: check
         timeout-minutes: 60
         env:
@@ -211,7 +220,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
-        uses: r-universe-org/actions/store-package@v8
+        uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-linux-${{ matrix.r }}
@@ -221,7 +230,7 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: 'linux'
-      - name: "Set: linux-${{ matrix.r }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: "Set: linux-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -248,7 +257,16 @@ jobs:
           enableCrossOsArchive: true
       - name: "Prepare WebAssembly system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v8
+        uses: r-universe-org/actions/linux-prep@v9
+      - name: "Get dependences"
+        id: deps
+        uses: r-universe-org/actions/linux-deps@v9
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - id: build
         name: Build package "${{needs.source.outputs.package}}"
         run: /entrypoint.sh
@@ -258,14 +276,14 @@ jobs:
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
           NEED_CARGO: ${{ needs.source.outputs.cargo }}
       - name: "Store package files"
-        uses: r-universe-org/actions/store-package@v8
+        uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-${{ matrix.r }}
           JOB_STATUS: ${{ job.status }}
           FILE: ${{ steps.build.outputs.binarypkg }}
           TARGET: "wasm"
-      - name: "Set: wasm-${{ matrix.r }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}"
+      - name: "Set: wasm-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -282,19 +300,28 @@ jobs:
     steps:
       - name: "Prepare Windows system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/windows-prep@v8
+        uses: r-universe-org/actions/windows-prep@v9
         with:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for Windows
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v8
+        uses: r-universe-org/actions/setup-r@v9
         id: install-r
         with:
           r-version: ${{ matrix.r }}
+      - name: "Get dependences"
+        id: deps
+        uses: r-universe-org/actions/windows-deps@v9
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/windows-build@v8
+        uses: r-universe-org/actions/windows-build@v9
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -303,7 +330,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           ostype: ${{ needs.source.outputs.ostype }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/windows-check@v8
+        uses: r-universe-org/actions/windows-check@v9
         id: check
         timeout-minutes: 60
         env:
@@ -312,7 +339,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
-        uses: r-universe-org/actions/store-package@v8
+        uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-windows-${{ matrix.r }}
@@ -321,7 +348,7 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: windows
-      - name: "Set: windows-${{ matrix.r }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: "Set: windows-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -339,7 +366,7 @@ jobs:
     steps:
       - name: "Prepare macOS system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/macos-prep@v8
+        uses: r-universe-org/actions/macos-prep@v9
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
@@ -348,12 +375,21 @@ jobs:
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for MacOS
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v8
+        uses: r-universe-org/actions/setup-r@v9
         id: install-r
         with:
           r-version: ${{ matrix.r }}
+      - name: "Get dependences"
+        id: deps
+        uses: r-universe-org/actions/macos-deps@v9
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/macos-build@v8
+        uses: r-universe-org/actions/macos-build@v9
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -361,7 +397,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/macos-check@v8
+        uses: r-universe-org/actions/macos-check@v9
         id: check
         timeout-minutes: 60
         env:
@@ -369,7 +405,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
-        uses: r-universe-org/actions/store-package@v8
+        uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-macos-${{ matrix.r }}-${{ matrix.arch }}
@@ -378,7 +414,7 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: macos
-      - name: "Set: macos-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: "Set: macos-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -399,7 +435,7 @@ jobs:
         uses: actions/download-artifact@v4
       - id: deployment
         name: Upload packages to server
-        uses: r-universe-org/actions/deploy-packages@v8
+        uses: r-universe-org/actions/deploy-packages@v9
         env:
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
           PKGDOCS: ${{ needs.docs.result }}
@@ -413,7 +449,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - name: Report deployment failures in slack
         if: failure()
-        uses: r-universe-org/actions/post-slack@v8
+        uses: r-universe-org/actions/post-slack@v9
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           DEPLOY_STATUS: ${{ steps.deployment.outcome }}
