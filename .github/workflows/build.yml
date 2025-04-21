@@ -230,7 +230,7 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: 'linux'
-      - name: "Set: linux-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: "Conclude: linux-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -283,7 +283,7 @@ jobs:
           JOB_STATUS: ${{ job.status }}
           FILE: ${{ steps.build.outputs.binarypkg }}
           TARGET: "wasm"
-      - name: "Set: wasm-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}"
+      - name: "Conclude: wasm-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -348,7 +348,7 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: windows
-      - name: "Set: windows-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: "Conclude: windows-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -414,7 +414,7 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: macos
-      - name: "Set: macos-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: "Conclude: macos-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
