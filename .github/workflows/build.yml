@@ -71,10 +71,12 @@ jobs:
     needs: prepare
     name: Build pkgdown site (ropensci only)
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     if: needs.prepare.outputs.build_docs
     steps:
       - name: Build package docs
+        timeout-minutes: 60
+        id: build
         uses: r-universe-org/build-docs@master
         with:
           repo_url: ${{ needs.prepare.outputs.repo_url }}
@@ -87,6 +89,9 @@ jobs:
         with:
           name: docs-website
           path: docs.zip
+      - name: "Conclude: pkgdown: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}"
+        if: always()
+        run: echo "print status to logs"
 
   deploydocs:
     name: Deploy to docs server
