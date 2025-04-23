@@ -177,6 +177,9 @@ jobs:
           else
           echo 'matrix=["arm64"]' >> $GITHUB_OUTPUT
           fi
+      - name: "Conclude: source: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}"
+        if: always()
+        run: echo "print status to logs"
 
   linux:
     needs: [prepare, source]
