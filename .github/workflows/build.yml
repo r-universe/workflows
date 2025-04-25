@@ -72,23 +72,20 @@ jobs:
     name: Build pkgdown site (ropensci only)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    container:
+      image: ghcr.io/ropensci-org/rotemplate:latest
     if: needs.prepare.outputs.build_docs
     steps:
       - name: Build package docs
         timeout-minutes: 60
         id: build
-        uses: r-universe-org/build-docs@master
+        uses: ropensci-org/rotemplate@main
         with:
           repo_url: ${{ needs.prepare.outputs.repo_url }}
           subdir: ${{ needs.prepare.outputs.repo_subdir }}
-          registry: ${{ github.event.repository.name }}
+          r-version: 'skip'
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-      - name: "Save docs zip"
-        uses: actions/upload-artifact@v4
-        with:
-          name: docs-website
-          path: docs.zip
       - name: "Conclude: pkgdown: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}"
         if: always()
         run: echo "print status to logs"
@@ -102,6 +99,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docs-website
+          path: docs-website
       - id: deployment
         name: Upload docs to server
         uses: r-universe-org/deploy-docs@master
