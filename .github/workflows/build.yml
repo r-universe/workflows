@@ -127,7 +127,9 @@ jobs:
       quarto: ${{ steps.build.outputs.NEED_QUARTO }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
       compiled: ${{ steps.build.outputs.NEEDS_COMPILATION }}
-      matrix: ${{ steps.matrix.outputs.matrix }}
+      matrix_macos: ${{ steps.matrix.outputs.matrix_macos }}
+      matrix_linux: ${{ steps.matrix.outputs.matrix_linux }}
+
     steps:
       - name: Free disk space on runner
         run: rm -Rf /usr/share/dotnet /opt/ghc "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY" || true
@@ -161,7 +163,7 @@ jobs:
         uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
-          name: package-linux-release
+          name: package-linux-release-x86_64
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ steps.build.outputs.DISTRO }}
           FILE: ${{ steps.build.outputs.BINARYPKG }}
@@ -176,9 +178,11 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.build.outputs.NEEDS_COMPILATION }}" ]; then
-          echo 'matrix=["x86_64","arm64"]' >> $GITHUB_OUTPUT
+          echo 'matrix_macos=["x86_64","arm64"]' >> $GITHUB_OUTPUT
+          echo 'matrix_linux=["x86_64","arm64"]' >> $GITHUB_OUTPUT
           else
-          echo 'matrix=["arm64"]' >> $GITHUB_OUTPUT
+          echo 'matrix_macos=["arm64"]' >> $GITHUB_OUTPUT
+          echo 'matrix_linux=["x86_64"]' >> $GITHUB_OUTPUT
           fi
       - name: "Conclude: source: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}"
         if: always()
@@ -187,13 +191,14 @@ jobs:
   linux:
     needs: [prepare, source]
     if: ${{ always() && needs.source.outputs.sourcepkg }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04${{matrix.arch=='arm64' && '-arm' || ''}}
     timeout-minutes: 120
-    name: Build R-${{ matrix.r }} for Linux
+    name: Build R-${{ matrix.r }} for Linux ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
       matrix:
         r: [ 'devel', 'release' ]
+        arch: ${{fromJson(needs.source.outputs.matrix_linux)}}
     container:
       image: ghcr.io/r-universe-org/base-image:${{ matrix.r }}
     steps:
@@ -229,14 +234,14 @@ jobs:
         uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
-          name: package-linux-${{ matrix.r }}
+          name: package-linux-${{ matrix.r }}-${{ matrix.arch }}
           overwrite: ${{ matrix.r == 'release' }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ steps.check.outputs.distro }}
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: 'linux'
-      - name: "Conclude: linux-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: "Conclude: linux-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "print status to logs"
         if: always()
 
@@ -249,7 +254,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'oldrel', 'release' ]
+        r: [ 'release' ]
     container:
       image: ghcr.io/r-universe-org/build-wasm${{ matrix.r == 'oldrel' && ':4.3' || '' }}
     steps:
@@ -368,7 +373,7 @@ jobs:
       fail-fast: false
       matrix:
         r: [ 'release', 'oldrel' ]
-        arch: ${{fromJson(needs.source.outputs.matrix)}}
+        arch: ${{fromJson(needs.source.outputs.matrix_macos)}}
     steps:
       - name: "Prepare macOS system"
         timeout-minutes: 10
