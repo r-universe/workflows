@@ -271,7 +271,7 @@ jobs:
         uses: r-universe-org/actions/linux-prep@v9
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/wasm-deps@v9
+        uses: r-universe-org/actions/linux-deps@v9
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
