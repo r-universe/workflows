@@ -254,9 +254,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'release' ]
+        r: [ 'release', 'oldrel' ]
     container:
-      image: ghcr.io/r-universe-org/build-wasm${{ matrix.r == 'oldrel' && ':4.3' || '' }}
+      image: ghcr.io/r-universe-org/build-wasm${{ matrix.r == 'oldrel' && ':4.4' || '' }}
     steps:
       - name: "Restore package library"
         uses: actions/cache/restore@v4
@@ -280,12 +280,14 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - id: build
         name: Build package "${{needs.source.outputs.package}}"
-        run: /entrypoint.sh
+        uses: r-universe-org/actions/wasm-build@v9
+        timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          SOURCEPKG: ${{ needs.source.outputs.sourcepkg }}
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
           NEED_CARGO: ${{ needs.source.outputs.cargo }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store package files"
         uses: r-universe-org/actions/store-package@v9
         if: ${{ always() && steps.build.outputs.binarypkg }}
