@@ -22,7 +22,6 @@ jobs:
   prepare:
     name: Determine package to build
     runs-on: ubuntu-24.04
-    if: "!contains(github.event.head_commit.message, 'Deleting packages')"
     outputs:
       repo_url: ${{ steps.lookup.outputs.repo_url }}
       repo_name: ${{ steps.lookup.outputs.repo_name }}
@@ -438,6 +437,7 @@ jobs:
     if: ${{ always() && needs.source.outputs.package }}
     outputs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
+      version_change: ${{ steps.deployment.outputs.version_change }}
     steps:
       - id: download
         continue-on-error: true
@@ -490,3 +490,15 @@ jobs:
           package: ${{ needs.prepare.outputs.repo_name }}
           has_app: ${{ needs.prepare.outputs.universe_app }}
           is_rebuild: ${{ needs.prepare.outputs.is_rebuild }}
+
+  rechecks:
+    name: Trigger rebuilds for dependents
+    runs-on: ubuntu-24.04
+    needs: [source, deploy]
+    if: ${{ always() && needs.deploy.outputs.version_change }}
+    steps:
+      - name: Trigger rebuilds
+        uses: r-universe-org/rebuilds@master
+        env:
+          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
+          TRIGGER_REVDEPS: ${{ needs.source.outputs.package }}
