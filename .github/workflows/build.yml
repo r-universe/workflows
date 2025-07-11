@@ -41,7 +41,7 @@ jobs:
     steps:
       - id: lookup
         name: Find changed package
-        uses: r-universe-org/actions/find-changes@v9
+        uses: r-universe-org/actions/find-changes@v10
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
 #          github-token: ${{secrets.PUBLIC_PAT}}
@@ -150,8 +150,9 @@ jobs:
           branch: ${{ needs.prepare.outputs.repo_branch }}
           articles: ${{ needs.prepare.outputs.repo_registered }}
       - name: "Store source package"
-        uses: r-universe-org/actions/store-package@v9
+        uses: r-universe-org/actions/store-package@v10
         if: ${{ always() && steps.build.outputs.PACKAGE }}
+        id: artifact
         with:
           name: package-source
           JOB_STATUS: ${{ job.status }}
@@ -159,7 +160,7 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/actions/store-package@v9
+        uses: r-universe-org/actions/store-package@v10
         if: ${{ always() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release-x86_64
@@ -183,9 +184,9 @@ jobs:
           echo 'matrix_macos=["arm64"]' >> $GITHUB_OUTPUT
           echo 'matrix_linux=["x86_64"]' >> $GITHUB_OUTPUT
           fi
-      - name: "${{'Conclude'}}: source: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}"
+      - name: "${{'Conclude'}}: source: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}: ${{ steps.artifact.outputs.artifact-id }}"
         if: always()
-        run: echo "print status to logs"
+        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
 
   linux:
     needs: [prepare, source]
@@ -203,10 +204,10 @@ jobs:
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v9
+        uses: r-universe-org/actions/linux-prep@v10
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/linux-deps@v9
+        uses: r-universe-org/actions/linux-deps@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -214,7 +215,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/linux-build@v9
+        uses: r-universe-org/actions/linux-build@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -222,7 +223,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/linux-check@v9
+        uses: r-universe-org/actions/linux-check@v10
         id: check
         timeout-minutes: 60
         env:
@@ -230,7 +231,8 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
-        uses: r-universe-org/actions/store-package@v9
+        id: artifact
+        uses: r-universe-org/actions/store-package@v10
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-linux-${{ matrix.r }}-${{ matrix.arch }}
@@ -240,8 +242,8 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: 'linux'
-      - name: "${{'Conclude'}}: linux-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
-        run: echo "print status to logs"
+      - name: "${{'Conclude'}}: linux-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
+        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
   wasm:
@@ -267,10 +269,10 @@ jobs:
           enableCrossOsArchive: true
       - name: "Prepare WebAssembly system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v9
+        uses: r-universe-org/actions/linux-prep@v10
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/linux-deps@v9
+        uses: r-universe-org/actions/linux-deps@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -279,7 +281,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - id: build
         name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/wasm-build@v9
+        uses: r-universe-org/actions/wasm-build@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -288,15 +290,16 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store package files"
-        uses: r-universe-org/actions/store-package@v9
+        id: artifact
+        uses: r-universe-org/actions/store-package@v10
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-${{ matrix.r }}
           JOB_STATUS: ${{ job.status }}
           FILE: ${{ steps.build.outputs.binarypkg }}
           TARGET: "wasm"
-      - name: "${{'Conclude'}}: wasm-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}"
-        run: echo "print status to logs"
+      - name: "${{'Conclude'}}: wasm-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
+        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
   windows:
@@ -312,20 +315,20 @@ jobs:
     steps:
       - name: "Prepare Windows system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/windows-prep@v9
+        uses: r-universe-org/actions/windows-prep@v10
         with:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for Windows
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v9
+        uses: r-universe-org/actions/setup-r@v10
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/windows-deps@v9
+        uses: r-universe-org/actions/windows-deps@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -333,7 +336,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/windows-build@v9
+        uses: r-universe-org/actions/windows-build@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -342,7 +345,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           ostype: ${{ needs.source.outputs.ostype }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/windows-check@v9
+        uses: r-universe-org/actions/windows-check@v10
         id: check
         timeout-minutes: 60
         env:
@@ -351,7 +354,8 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
-        uses: r-universe-org/actions/store-package@v9
+        id: artifact
+        uses: r-universe-org/actions/store-package@v10
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-windows-${{ matrix.r }}
@@ -360,8 +364,8 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: windows
-      - name: "${{'Conclude'}}: windows-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
-        run: echo "print status to logs"
+      - name: "${{'Conclude'}}: windows-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
+        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
   macos:
@@ -378,7 +382,7 @@ jobs:
     steps:
       - name: "Prepare macOS system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/macos-prep@v9
+        uses: r-universe-org/actions/macos-prep@v10
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
@@ -387,13 +391,13 @@ jobs:
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for MacOS
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v9
+        uses: r-universe-org/actions/setup-r@v10
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/macos-deps@v9
+        uses: r-universe-org/actions/macos-deps@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -401,7 +405,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/macos-build@v9
+        uses: r-universe-org/actions/macos-build@v10
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -409,7 +413,7 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/macos-check@v9
+        uses: r-universe-org/actions/macos-check@v10
         id: check
         timeout-minutes: 60
         env:
@@ -417,7 +421,8 @@ jobs:
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
-        uses: r-universe-org/actions/store-package@v9
+        id: artifact
+        uses: r-universe-org/actions/store-package@v10
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-macos-${{ matrix.r }}-${{ matrix.arch }}
@@ -426,8 +431,8 @@ jobs:
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: macos
-      - name: "${{'Conclude'}}: macos-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
-        run: echo "print status to logs"
+      - name: "${{'Conclude'}}: macos-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
+        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
   deploy:
@@ -448,7 +453,7 @@ jobs:
         uses: actions/download-artifact@v4
       - id: deployment
         name: Upload packages to server
-        uses: r-universe-org/actions/deploy-packages@v9
+        uses: r-universe-org/actions/deploy-packages@v10
         env:
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
           PKGDOCS: ${{ needs.docs.result }}
@@ -462,7 +467,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - name: Report deployment failures in slack
         if: failure()
-        uses: r-universe-org/actions/post-slack@v9
+        uses: r-universe-org/actions/post-slack@v10
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           DEPLOY_STATUS: ${{ steps.deployment.outcome }}
