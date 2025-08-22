@@ -255,7 +255,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'release', 'oldrel' ]
+        r: [ 'release' ]
     container:
       image: ghcr.io/r-universe-org/build-wasm${{ matrix.r == 'oldrel' && ':4.4' || '' }}
     steps:
