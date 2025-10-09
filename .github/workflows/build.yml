@@ -66,7 +66,7 @@ jobs:
           has_app: ${{ needs.prepare.outputs.universe_app }}
           package: ${{ needs.prepare.outputs.repo_name }}
           deployed_packages: 'pending'
-        if: ${{ !needs.prepare.outputs.is_rebuild }}
+        if: needs.prepare.outputs.universe_app && !needs.prepare.outputs.is_rebuild
 
   docs:
     needs: prepare
