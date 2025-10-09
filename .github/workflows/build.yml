@@ -5,6 +5,10 @@ on:
         description: Which package or commit to build (default is HEAD commit)
         type: string
         required: false
+      universe:
+        description: Which universe to get dependencies from
+        type: string
+        required: false
     secrets:
       DUMMY_SESSION:
       CRANLIKEPWD:
@@ -13,8 +17,8 @@ on:
       BOT_TOKEN:
 
 env:
-  UNIVERSE_NAME:  ${{ github.event.repository.name}}
-  MY_UNIVERSE: ${{ format('https://{0}.r-universe.dev', github.event.repository.name) }}
+  UNIVERSE_NAME:  ${{ inputs.universe || github.event.repository.name}}
+  MY_UNIVERSE: ${{ format('https://{0}.r-universe.dev', inputs.universe || github.event.repository.name) }}
 #  MY_UNIVERSE: ${{ github.event.repository.name != 'cran' && format('https://{0}.r-universe.dev', github.event.repository.name) || '' }}
   GH_APP_ID: '87942'
 
