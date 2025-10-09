@@ -57,6 +57,7 @@ jobs:
     name: Set Status to Pending
     runs-on: ubuntu-24.04
     needs: [prepare]
+    if: needs.prepare.outputs.universe_app && !needs.prepare.outputs.is_rebuild
     steps:
       - name: Set upstream commit status
         uses: r-universe-org/commit-status@master
@@ -70,7 +71,6 @@ jobs:
           has_app: ${{ needs.prepare.outputs.universe_app }}
           package: ${{ needs.prepare.outputs.repo_name }}
           deployed_packages: 'pending'
-        if: needs.prepare.outputs.universe_app && !needs.prepare.outputs.is_rebuild
 
   docs:
     needs: prepare
@@ -482,7 +482,7 @@ jobs:
     name: Set Github Status
     runs-on: ubuntu-24.04
     needs: [prepare, docs, source, deploy, pendingstatus]
-    if: always()
+    if: needs.prepare.outputs.universe_app && !needs.prepare.outputs.is_rebuild
     steps:
       - name: Set upstream commit status
         uses: r-universe-org/commit-status@master
