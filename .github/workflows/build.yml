@@ -482,7 +482,7 @@ jobs:
     name: Set Github Status
     runs-on: ubuntu-24.04
     needs: [prepare, docs, source, deploy, pendingstatus]
-    if: needs.prepare.outputs.universe_app && !needs.prepare.outputs.is_rebuild
+    if: always() && needs.prepare.outputs.universe_app
     steps:
       - name: Set upstream commit status
         uses: r-universe-org/commit-status@master
