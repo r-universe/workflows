@@ -149,7 +149,6 @@ jobs:
           DUMMY_SESSION: ${{secrets.DUMMY_SESSION}}
           CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
           REGISTRY_METADATA: ${{ needs.prepare.outputs.registry_metadata }}
-          ARROW_GCS: OFF
         with:
           url: ${{ needs.prepare.outputs.repo_url }}
           ref: ${{ needs.prepare.outputs.repo_commit }}
