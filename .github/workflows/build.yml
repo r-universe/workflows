@@ -41,6 +41,7 @@ jobs:
       is_rebuild: ${{ steps.lookup.outputs.is_rebuild }}
       cran_version: ${{ steps.lookup.outputs.cran_version }}
       registry_metadata: ${{ steps.lookup.outputs.registry_metadata }}
+      bioc_check: ${{ steps.lookup.outputs.bioc_check }}
 
     steps:
       - id: lookup
@@ -438,6 +439,39 @@ jobs:
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: macos
       - name: "${{'Conclude'}}: macos-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
+        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
+        if: always()
+
+  bioccheck:
+    needs: [prepare, source]
+    if: ${{ always() && needs.source.outputs.sourcepkg && needs.prepare.outputs.bioc_check }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    name: Bioconductor Checks
+    container:
+      image: ghcr.io/r-universe-org/base-image:release
+    steps:
+      - name: "Prepare Linux system"
+        timeout-minutes: 10
+        uses: r-universe-org/actions/linux-prep@v10
+      - name: "Get dependences"
+        id: deps
+        uses: r-universe-org/actions/linux-deps@v10
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+      - name: Run BiocCheck for "${{needs.source.outputs.package}}"
+        uses: r-universe-org/actions/bioc-check@v10
+        id: check
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+      - name: "${{'Conclude'}}: bioc-checks: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
