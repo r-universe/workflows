@@ -450,6 +450,8 @@ jobs:
     name: Bioconductor Checks
     container:
       image: ghcr.io/r-universe-org/base-image:release
+    outputs:
+      checkresults: ${{ steps.check.outputs.checkresults }}
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
@@ -478,7 +480,7 @@ jobs:
   deploy:
     name: Deploy to package server
     runs-on: ubuntu-24.04
-    needs: [prepare, source, linux, windows, macos, wasm, docs]
+    needs: [prepare, source, linux, windows, macos, wasm, docs, bioccheck]
     if: ${{ always() && needs.source.outputs.package }}
     outputs:
       deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
@@ -496,7 +498,7 @@ jobs:
         uses: r-universe-org/actions/deploy-packages@v10
         env:
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
-          PKGDOCS: ${{ needs.docs.result }}
+          BIOC_CHECKS: ${{ needs.bioccheck.outputs.checkresults }}
           SKIP_BINARIES: ${{ needs.prepare.outputs.skip_binaries }}
           REPO_URL: ${{ needs.prepare.outputs.repo_url }}
           REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
