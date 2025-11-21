@@ -473,7 +473,14 @@ jobs:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-      - name: "${{'Conclude'}}: bioc-checks: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}"
+      - name: Store ${{needs.source.outputs.package}}.BiocCheck
+        id: artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bioc-checks
+          path: ${{needs.source.outputs.package}}.BiocCheck
+      - name: "${{'Conclude'}}: bioc-checks: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
