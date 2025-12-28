@@ -102,7 +102,7 @@ jobs:
     needs: docs
     steps:
       - name: Get artifacts for deployment
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: docs-website
           path: docs-website
@@ -476,7 +476,7 @@ jobs:
       - name: Store ${{needs.source.outputs.package}}.BiocCheck
         id: artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bioc-checks
           path: ${{needs.source.outputs.package}}.BiocCheck
@@ -496,10 +496,10 @@ jobs:
       - id: download
         continue-on-error: true
         name: Download artifacts for deployment
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
       - if: steps.download.outcome == 'failure'
         name: Retry to download artifacts for deployment
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
       - id: deployment
         name: Upload packages to server
         uses: r-universe-org/actions/deploy-packages@v10
