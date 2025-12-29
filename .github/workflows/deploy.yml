@@ -1,0 +1,146 @@
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: Which package or commit to build (default is HEAD commit)
+        type: string
+        required: false
+    secrets:
+      DUMMY_SESSION:
+      CRANLIKEPWD:
+      GH_APP_KEY:
+      SLACK_TOKEN:
+      BOT_TOKEN:
+
+name: Deploy package
+run-name: ${{ github.event.head_commit.message || format('{0} (rebuild)', inputs.package) }}
+
+jobs:
+  prepare:
+    name: Prepare build
+    runs-on: ubuntu-latest
+    outputs:
+      package: ${{ steps.info.outputs.package }}
+      universe: ${{ steps.info.outputs.universe }}
+      repository: ${{ steps.info.outputs.repository }}
+      ref: ${{ steps.info.outputs.ref }}
+      subdir: ${{ steps.info.outputs.subdir }}
+      binaries: ${{ steps.info.outputs.binaries }}
+      organization: ${{ steps.info.outputs.organization }}
+      registered: ${{ steps.info.outputs.registered }}
+      hasapp: ${{ steps.info.outputs.hasapp }}
+      variables: ${{ steps.info.outputs.variables }}
+    steps:
+      - id: info
+        name: Get info from monorepo
+        uses: r-universe-org/actions/before-build@v11
+        with:
+          package: ${{inputs.package}}
+        env:
+          DUMMY_SESSION: ${{ secrets.DUMMY_SESSION }}
+
+      - name: Report inprogess to r-universe
+        shell: bash
+        run: |
+          curl "https://${{ steps.info.outputs.universe }}.r-universe.dev/api/progress/${{ steps.info.outputs.package }}" \
+            -u "${{ secrets.CRANLIKEPWD }}" \
+            -F "url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+      - name: Set upstream commit status
+        uses: r-universe-org/commit-status@v3
+        if: steps.info.outputs.hasapp
+        with:
+          repository: ${{ steps.info.outputs.repository }}
+          ref: ${{ steps.info.outputs.ref }}
+          universe: ${{ steps.info.outputs.universe }}
+          package: ${{ steps.info.outputs.package }}
+          buildlog: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          jobdata: 'pending'
+        env:
+           GH_APP_ID: '87942'
+           GH_APP_KEY: ${{ secrets.GH_APP_KEY }}
+
+      - name: Report failures in slack
+        if: failure()
+        uses: r-universe-org/actions/post-slack@v11
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          DEPLOY_STATUS: ${{ steps.deployment.outcome }}
+
+  build:
+    needs: prepare
+    name: Build and Check
+    uses: r-universe-org/workflows/.github/workflows/build.yml@v3
+    with:
+      universe: ${{ needs.prepare.outputs.universe }}
+      repository: ${{ needs.prepare.outputs.repository }}
+      ref: ${{ needs.prepare.outputs.ref }}
+      subdir: ${{ needs.prepare.outputs.subdir }}
+      binaries: ${{ needs.prepare.outputs.binaries }}
+      organization: ${{ needs.prepare.outputs.organization }}
+      variables: ${{ needs.prepare.outputs.variables }}
+
+  deploy:
+    name: Deploy and report
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+    if: always() && needs.prepare.result == 'success'
+    outputs:
+      version_change: ${{ steps.deployment.outputs.version_change }}
+    steps:
+      - name: Download package files
+        uses: actions/download-artifact@v7
+      - name: Upload site to rOpenSci docs server
+        if: ${{ needs.build.result != 'cancelled' && needs.prepare.outputs.organization == 'ropensci' }}
+        continue-on-error: true
+        uses: r-universe-org/deploy-docs@master
+        env:
+          BUILDLOG: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
+      - id: deployment
+        name: Upload packages to server
+        if: ${{ needs.build.result != 'cancelled' && needs.build.outputs.package == needs.prepare.outputs.package }}
+        uses: r-universe-org/actions/deploy-packages@v11
+        env:
+          UPSTREAM: ${{ needs.prepare.outputs.repository }}
+          UNIVERSE: ${{ needs.prepare.outputs.universe }}
+          REGISTERED: ${{ needs.prepare.outputs.registered }}
+          COMMITINFO: ${{ needs.build.outputs.commitinfo }}
+          MAINTAINERINFO: ${{ needs.build.outputs.maintainerinfo }}
+          PACKAGE: ${{ needs.build.outputs.package }}
+          VERSION: ${{ needs.build.outputs.version }}
+          BIOC_CHECKS: ${{ needs.build.outputs.biocchecks }}
+          CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Report deployment failures in slack
+        if: failure()
+        uses: r-universe-org/actions/post-slack@v11
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          DEPLOY_STATUS: ${{ steps.deployment.outcome }}
+      - name: Set upstream commit status
+        if: always() && needs.prepare.outputs.hasapp
+        uses: r-universe-org/commit-status@v3
+        env:
+          GH_APP_ID: '87942'
+          GH_APP_KEY: ${{ secrets.GH_APP_KEY }}
+        with:
+          package: ${{ needs.prepare.outputs.package }}
+          repository: ${{ needs.prepare.outputs.repository }}
+          ref: ${{ needs.prepare.outputs.ref }}
+          buildlog: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          universe: ${{ needs.prepare.outputs.universe }}
+          jobdata: ${{ steps.deployment.outputs.jobdata }}
+
+  rechecks:
+    name: Trigger rebuilds for dependents
+    runs-on: ubuntu-latest
+    needs: [prepare, deploy]
+    if: ${{ !cancelled() && needs.deploy.outputs.version_change }}
+    steps:
+      - name: Trigger rebuilds
+        uses: r-universe-org/rebuilds@master
+        env:
+          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
+          TRIGGER_REVDEPS: ${{ needs.prepare.outputs.package }}
+          UNIVERSE: ${{ needs.prepare.outputs.universe }}

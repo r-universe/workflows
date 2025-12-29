@@ -1,123 +1,60 @@
 on:
   workflow_call:
     inputs:
-      package:
-        description: Which package or commit to build (default is HEAD commit)
-        type: string
-        required: false
       universe:
-        description: Which universe to get dependencies from
+        description: Universe to take dependencies from
         type: string
-        required: false
-    secrets:
-      DUMMY_SESSION:
-      CRANLIKEPWD:
-      GH_APP_KEY:
-      SLACK_TOKEN:
-      BOT_TOKEN:
+      repository:
+        description: URL to git repository containing R package
+        type: string
+        default: https://github.com/${{ github.repository }}
+      ref:
+        description: Commit-id or refname to build
+        type: string
+        default: ${{ github.sha }}
+      subdir:
+        description: Directory to find R package
+        type: string
+      binaries:
+        description: Build and check on Windows and MacOS
+        type: string
+        default: 'true'
+      organization:
+        description: Run extra organization specific checks
+        type: string
+        default: ${{ github.repository_owner }}
+      variables:
+        description: Extra environment variables from R-universe
+        type: string
+        default: '{}'
+    outputs:
+      commitinfo:
+        description: "Metadata from the commit"
+        value: ${{ jobs.source.outputs.commitinfo }}
+      maintainerinfo:
+        description: "Metadata from the maintainer"
+        value: ${{ jobs.source.outputs.maintainerinfo }}
+      package:
+        description: "Name of the package if build was tried"
+        value: ${{ jobs.source.outputs.package }}
+      version:
+        description: "Version of the package"
+        value: ${{ jobs.source.outputs.version }}
+      biocchecks:
+        description: "Check results from Bioconductor"
+        value: ${{ jobs.bioconductor.outputs.checkresults }}
 
 env:
-  UNIVERSE_NAME:  ${{ inputs.universe || github.event.repository.name}}
-  MY_UNIVERSE: ${{ format('https://{0}.r-universe.dev', inputs.universe || github.event.repository.name) }}
-#  MY_UNIVERSE: ${{ github.event.repository.name != 'cran' && format('https://{0}.r-universe.dev', github.event.repository.name) || '' }}
-  GH_APP_ID: '87942'
+  UNIVERSE_NAME: ${{ inputs.universe }}
+  MY_UNIVERSE: ${{ inputs.universe && format('https://{0}.r-universe.dev', inputs.universe) || '' }}
+  CRAN_VERSION: ${{ fromJSON(inputs.variables).CRAN_VERSION }}
 
 jobs:
-  prepare:
-    name: Determine package to build
-    runs-on: ubuntu-24.04
-    outputs:
-      repo_url: ${{ steps.lookup.outputs.repo_url }}
-      repo_name: ${{ steps.lookup.outputs.repo_name }}
-      repo_commit: ${{ steps.lookup.outputs.repo_commit }}
-      repo_subdir: ${{ steps.lookup.outputs.repo_subdir }}
-      repo_branch: ${{ steps.lookup.outputs.repo_branch }}
-      repo_registered: ${{ steps.lookup.outputs.repo_registered }}
-      universe_app: ${{ steps.lookup.outputs.universe_app }}
-      maintainer_login: ${{ steps.lookup.outputs.maintainer_login }}
-      maintainer_uuid: ${{ steps.lookup.outputs.maintainer_uuid }}
-      build_docs: ${{ steps.lookup.outputs.build_docs }}
-      skip_binaries: ${{ steps.lookup.outputs.skip_binaries }}
-      is_rebuild: ${{ steps.lookup.outputs.is_rebuild }}
-      cran_version: ${{ steps.lookup.outputs.cran_version }}
-      registry_metadata: ${{ steps.lookup.outputs.registry_metadata }}
-      bioc_check: ${{ steps.lookup.outputs.bioc_check }}
-
-    steps:
-      - id: lookup
-        name: Find changed package
-        uses: r-universe-org/actions/find-changes@v10
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-#          github-token: ${{secrets.PUBLIC_PAT}}
-          package: ${{ inputs.package }}
-        env:
-          CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
-
-  pendingstatus:
-    name: Set Status to Pending
-    runs-on: ubuntu-24.04
-    needs: [prepare]
-    if: needs.prepare.outputs.universe_app && !needs.prepare.outputs.is_rebuild
-    steps:
-      - name: Set upstream commit status
-        uses: r-universe-org/commit-status@master
-        env:
-          GH_APP_KEY: ${{ secrets.GH_APP_KEY }}
-        with:
-          repo: ${{ needs.prepare.outputs.repo_url }}
-          sha: ${{ needs.prepare.outputs.repo_commit }}
-          url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          universe: ${{ github.event.repository.name }}
-          has_app: ${{ needs.prepare.outputs.universe_app }}
-          package: ${{ needs.prepare.outputs.repo_name }}
-          deployed_packages: 'pending'
-
-  docs:
-    needs: prepare
-    name: Build pkgdown site (ropensci only)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    container:
-      image: ghcr.io/ropensci-org/rotemplate:latest
-    if: needs.prepare.outputs.build_docs
-    steps:
-      - name: Build package docs
-        timeout-minutes: 60
-        id: build
-        uses: ropensci-org/rotemplate@main
-        with:
-          repo_url: ${{ needs.prepare.outputs.repo_url }}
-          subdir: ${{ needs.prepare.outputs.repo_subdir }}
-          r-version: 'skip'
-        env:
-          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-      - name: "${{'Conclude'}}: pkgdown: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}"
-        if: always()
-        run: echo "print status to logs"
-
-  deploydocs:
-    name: Deploy to docs server
-    runs-on: ubuntu-24.04
-    needs: docs
-    steps:
-      - name: Get artifacts for deployment
-        uses: actions/download-artifact@v7
-        with:
-          name: docs-website
-          path: docs-website
-      - id: deployment
-        name: Upload docs to server
-        uses: r-universe-org/deploy-docs@master
-        env:
-          BUILDLOG: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
-
   source:
-    needs: prepare
     name: Build source pkg and vignettes
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 90
+    env: ${{fromJSON(inputs.variables)}}
     outputs:
       commitinfo: ${{ steps.build.outputs.COMMITINFO }}
       maintainerinfo: ${{ steps.build.outputs.MAINTAINERINFO }}
@@ -141,24 +78,19 @@ jobs:
         run: rm -Rf /usr/share/dotnet /opt/ghc "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY" || true
       - id: build
         timeout-minutes: 60
-        name: Build source package (including vignettes)
+        name: Build source package and vignettes
         uses: r-universe-org/build-source@master
         env:
-          MAINTAINERLOGIN: ${{ needs.prepare.outputs.maintainer_login }}
-          MAINTAINERUUID: ${{ needs.prepare.outputs.maintainer_uuid }}
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          DUMMY_SESSION: ${{secrets.DUMMY_SESSION}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
-          REGISTRY_METADATA: ${{ needs.prepare.outputs.registry_metadata }}
         with:
-          url: ${{ needs.prepare.outputs.repo_url }}
-          ref: ${{ needs.prepare.outputs.repo_commit }}
-          subdir: ${{ needs.prepare.outputs.repo_subdir }}
-          branch: ${{ needs.prepare.outputs.repo_branch }}
-          articles: ${{ needs.prepare.outputs.repo_registered }}
+          url: ${{ inputs.repository }}
+          ref: ${{ inputs.ref }}
+          subdir: ${{ inputs.subdir }}
+          branch: ${{ fromJSON(inputs.variables).branch }}
+          articles: ${{ fromJSON(inputs.variables).registered }}
       - name: "Store source package"
-        uses: r-universe-org/actions/store-package@v10
-        if: ${{ always() && steps.build.outputs.PACKAGE }}
+        uses: r-universe-org/actions/store-package@v11
+        if: ${{ !cancelled() && steps.build.outputs.PACKAGE }}
         id: artifact
         with:
           name: package-source
@@ -167,20 +99,14 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/actions/store-package@v10
-        if: ${{ always() && steps.build.outputs.BINARYPKG }}
+        uses: r-universe-org/actions/store-package@v11
+        if: ${{ !cancelled() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release-x86_64
           JOB_STATUS: ${{ job.status }}
           DISTRO: ${{ steps.build.outputs.DISTRO }}
           FILE: ${{ steps.build.outputs.BINARYPKG }}
           TARGET: 'linux'
-      - name: "Cache package library"
-        uses: actions/cache/save@v4
-        if: ${{ always() && steps.build.outputs.BINARYPKG }}
-        with:
-          path: ${{ github.workspace }}/pkglib
-          key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
       - id: matrix
         if: always()
         run: |
@@ -196,8 +122,8 @@ jobs:
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
 
   linux:
-    needs: [prepare, source]
-    if: ${{ always() && needs.source.outputs.sourcepkg }}
+    needs: [source]
+    if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
     runs-on: ubuntu-24.04${{matrix.arch=='arm64' && '-arm' || ''}}
     timeout-minutes: 120
     name: Build R-${{ matrix.r }} for Linux ${{ needs.source.outputs.compiled && matrix.arch || '' }}
@@ -211,26 +137,24 @@ jobs:
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v10
+        uses: r-universe-org/actions/linux-prep@v11
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/linux-deps@v10
+        uses: r-universe-org/actions/linux-deps@v11
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/linux-build@v10
+        uses: r-universe-org/actions/linux-build@v11
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/linux-check@v10
+        uses: r-universe-org/actions/linux-check@v11
         id: check
         timeout-minutes: 60
         env:
@@ -239,7 +163,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
         id: artifact
-        uses: r-universe-org/actions/store-package@v10
+        uses: r-universe-org/actions/store-package@v11
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-linux-${{ matrix.r }}-${{ matrix.arch }}
@@ -253,65 +177,9 @@ jobs:
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
-  wasm:
-    needs: [prepare, source]
-    if: ${{ always() && needs.source.outputs.sourcepkg }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    name: Build R-${{ matrix.r }} for WebAssembly
-    strategy:
-      fail-fast: false
-      matrix:
-        r: [ 'release' ]
-    container:
-      image: ghcr.io/r-universe-org/build-wasm${{ matrix.r == 'oldrel' && ':4.4' || '' }}
-    steps:
-      - name: "Restore package library"
-        uses: actions/cache/restore@v4
-        if: matrix.r == 'release'
-        with:
-          path: ${{ github.workspace }}/pkglib
-          key: ${{ runner.os }}-${{ github.run_id }}-${{github.run_attempt}}
-          restore-keys: ${{ runner.os }}-${{ github.run_id }}
-          enableCrossOsArchive: true
-      - name: "Prepare WebAssembly system"
-        timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v10
-      - name: "Get dependences"
-        id: deps
-        uses: r-universe-org/actions/linux-deps@v10
-        timeout-minutes: 60
-        env:
-          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
-        with:
-          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-      - id: build
-        name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/wasm-build@v10
-        timeout-minutes: 60
-        env:
-          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
-          NEED_CARGO: ${{ needs.source.outputs.cargo }}
-        with:
-          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
-      - name: "Store package files"
-        id: artifact
-        uses: r-universe-org/actions/store-package@v10
-        if: ${{ always() && steps.build.outputs.binarypkg }}
-        with:
-          name: package-wasm-${{ matrix.r }}
-          JOB_STATUS: ${{ job.status }}
-          FILE: ${{ steps.build.outputs.binarypkg }}
-          TARGET: "wasm"
-      - name: "${{'Conclude'}}: wasm-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
-        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
-        if: always()
-
   windows:
-    needs: [prepare, source]
-    if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
+    needs: [source]
+    if: ${{ !cancelled() && needs.source.outputs.sourcepkg && inputs.binaries }}
     runs-on: 'windows-2025'
     timeout-minutes: 100
     name: Build R-${{ matrix.r }} for Windows
@@ -322,47 +190,44 @@ jobs:
     steps:
       - name: "Prepare Windows system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/windows-prep@v10
+        uses: r-universe-org/actions/windows-prep@v11
         with:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for Windows
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v10
+        uses: r-universe-org/actions/setup-r@v11
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/windows-deps@v10
+        uses: r-universe-org/actions/windows-deps@v11
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/windows-build@v10
+        uses: r-universe-org/actions/windows-build@v11
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           ostype: ${{ needs.source.outputs.ostype }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/windows-check@v10
+        uses: r-universe-org/actions/windows-check@v11
         id: check
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
         id: artifact
-        uses: r-universe-org/actions/store-package@v10
+        uses: r-universe-org/actions/store-package@v11
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-windows-${{ matrix.r }}
@@ -376,8 +241,8 @@ jobs:
         if: always()
 
   macos:
-    needs: [prepare, source]
-    if: ${{ always() && needs.source.outputs.sourcepkg && !needs.prepare.outputs.skip_binaries }}
+    needs: [source]
+    if: ${{ !cancelled() && needs.source.outputs.sourcepkg && inputs.binaries }}
     runs-on: macos-${{ matrix.arch == 'x86_64' && '15-intel' || '15' }}
     timeout-minutes: 120
     name: Build R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
@@ -389,7 +254,7 @@ jobs:
     steps:
       - name: "Prepare macOS system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/macos-prep@v10
+        uses: r-universe-org/actions/macos-prep@v11
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
@@ -398,29 +263,27 @@ jobs:
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for MacOS
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v10
+        uses: r-universe-org/actions/setup-r@v11
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/macos-deps@v10
+        uses: r-universe-org/actions/macos-deps@v11
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/macos-build@v10
+        uses: r-universe-org/actions/macos-build@v11
         timeout-minutes: 90
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/macos-check@v10
+        uses: r-universe-org/actions/macos-check@v11
         id: check
         timeout-minutes: 60
         env:
@@ -429,7 +292,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
         id: artifact
-        uses: r-universe-org/actions/store-package@v10
+        uses: r-universe-org/actions/store-package@v11
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-macos-${{ matrix.r }}-${{ matrix.arch }}
@@ -442,9 +305,55 @@ jobs:
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
-  bioccheck:
-    needs: [prepare, source]
-    if: ${{ always() && needs.source.outputs.sourcepkg && needs.prepare.outputs.bioc_check }}
+  wasm:
+    needs: [source]
+    if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    name: Build R-${{ matrix.r }} for Wasm
+    strategy:
+      fail-fast: false
+      matrix:
+        r: [ 'release' ]
+    container:
+      image: ghcr.io/r-universe-org/build-wasm${{ matrix.r == 'oldrel' && ':4.4' || '' }}
+    steps:
+      - name: "Prepare WebAssembly system"
+        timeout-minutes: 10
+        uses: r-universe-org/actions/linux-prep@v11
+      - name: "Get dependences"
+        id: deps
+        uses: r-universe-org/actions/linux-deps@v11
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+      - id: build
+        name: Build package "${{needs.source.outputs.package}}"
+        uses: r-universe-org/actions/wasm-build@v11
+        timeout-minutes: 60
+        env:
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+          NEED_CARGO: ${{ needs.source.outputs.cargo }}
+        with:
+          sourcepkg: ${{ needs.source.outputs.sourcepkg }}
+      - name: "Store package files"
+        id: artifact
+        uses: r-universe-org/actions/store-package@v11
+        if: ${{ always() && steps.build.outputs.binarypkg }}
+        with:
+          name: package-wasm-${{ matrix.r }}
+          JOB_STATUS: ${{ job.status }}
+          FILE: ${{ steps.build.outputs.binarypkg }}
+          TARGET: "wasm"
+      - name: "${{'Conclude'}}: wasm-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.build.outputs.binarypkg && 'OK' || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
+        run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
+        if: always()
+
+  bioconductor:
+    needs: [source]
+    if: ${{ needs.source.outputs.sourcepkg && inputs.organization == 'bioconductor' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 100
     name: Bioconductor Checks
@@ -455,18 +364,17 @@ jobs:
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v10
+        uses: r-universe-org/actions/linux-prep@v11
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/linux-deps@v10
+        uses: r-universe-org/actions/linux-deps@v11
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
-          CRAN_VERSION: ${{ needs.prepare.outputs.cran_version }}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Run BiocCheck for "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/bioc-check@v10
+        uses: r-universe-org/actions/bioc-check@v11
         id: check
         timeout-minutes: 60
         env:
@@ -484,75 +392,24 @@ jobs:
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
-  deploy:
-    name: Deploy to package server
-    runs-on: ubuntu-24.04
-    needs: [prepare, source, linux, windows, macos, wasm, docs, bioccheck]
-    if: ${{ always() && needs.source.outputs.package }}
-    outputs:
-      deployed_packages: ${{ steps.deployment.outputs.deployed_packages }}
-      version_change: ${{ steps.deployment.outputs.version_change }}
+  ropensci:
+    name: Build rOpenSci docs site
+    runs-on: ubuntu-latest
+    if: ${{ inputs.organization == 'ropensci' }}
+    timeout-minutes: 90
+    container:
+      image: ghcr.io/ropensci-org/rotemplate:latest
     steps:
-      - id: download
-        continue-on-error: true
-        name: Download artifacts for deployment
-        uses: actions/download-artifact@v7
-      - if: steps.download.outcome == 'failure'
-        name: Retry to download artifacts for deployment
-        uses: actions/download-artifact@v7
-      - id: deployment
-        name: Upload packages to server
-        uses: r-universe-org/actions/deploy-packages@v10
-        env:
-          CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
-          BIOC_CHECKS: ${{ needs.bioccheck.outputs.checkresults }}
-          SKIP_BINARIES: ${{ needs.prepare.outputs.skip_binaries }}
-          REPO_URL: ${{ needs.prepare.outputs.repo_url }}
-          REPO_REGISTERED: ${{ needs.prepare.outputs.repo_registered }}
-          COMMITINFO: ${{ needs.source.outputs.commitinfo }}
-          MAINTAINERINFO: ${{ needs.source.outputs.maintainerinfo }}
-          PACKAGE: ${{ needs.source.outputs.package }}
-          VERSION: ${{ needs.source.outputs.version }}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - name: Report deployment failures in slack
-        if: failure()
-        uses: r-universe-org/actions/post-slack@v10
-        env:
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          DEPLOY_STATUS: ${{ steps.deployment.outcome }}
-
-  finalstatus:
-    name: Set Github Status
-    runs-on: ubuntu-24.04
-    needs: [prepare, docs, source, deploy, pendingstatus]
-    if: always() && needs.prepare.outputs.universe_app
-    steps:
-      - name: Set upstream commit status
-        uses: r-universe-org/commit-status@master
-        env:
-          GH_APP_KEY: ${{ secrets.GH_APP_KEY }}
-#          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
+      - name: Build package docs
+        timeout-minutes: 60
+        id: build
+        uses: ropensci-org/rotemplate@main
         with:
-          repo: ${{ needs.prepare.outputs.repo_url }}
-          sha: ${{ needs.prepare.outputs.repo_commit }}
-          url: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          universe: ${{ github.event.repository.name }}
-          deployed_packages: ${{ needs.deploy.outputs.deployed_packages }}
-          source_status: ${{ needs.source.result }}
-          docs_status: ${{ needs.docs.result }}
-          ostype: ${{ needs.source.outputs.ostype }}
-          package: ${{ needs.prepare.outputs.repo_name }}
-          has_app: ${{ needs.prepare.outputs.universe_app }}
-          is_rebuild: ${{ needs.prepare.outputs.is_rebuild }}
-
-  rechecks:
-    name: Trigger rebuilds for dependents
-    runs-on: ubuntu-24.04
-    needs: [source, deploy]
-    if: ${{ always() && needs.deploy.outputs.version_change }}
-    steps:
-      - name: Trigger rebuilds
-        uses: r-universe-org/rebuilds@master
+          repo_url: ${{ inputs.repository }}
+          subdir: ${{ inputs.subdir }}
+          r-version: 'skip'
         env:
-          GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
-          TRIGGER_REVDEPS: ${{ needs.source.outputs.package }}
+          GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
+      - name: "${{'Conclude'}}: pkgdown: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}: ${{ steps.build.outputs.artifact-id }}"
+        run: echo "Artifact URL ${{steps.build.outputs.artifact-url}}"
+        if: always()

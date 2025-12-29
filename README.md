@@ -1,13 +1,29 @@
 # R-universe workflows
 
-This repository contains the worksflows that are used to sync, build, check, and deploy R packages on [R-universe](https://r-universe.dev). This has been set up using so-called [reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows#creating-a-reusable-workflow):
+This repository contains the GHA [reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows#creating-a-reusable-workflow) that we use to sync, build, check, and deploy R packages on [R-universe](https://r-universe.dev).
 
-The actual runs and jobs are triggered in the monorepos of the universe owner under the [r-universe](http://github.com/r-universe) GitHub organization. For example runs for `ropensci` can be found at: https://github.com/r-universe/ropensci/actions
+For deployment to [https://r-universe.dev](https://r-universe.dev), builds are run inside the __monorepos__ of the universe owner under the [r-universe](http://github.com/r-universe) GitHub organization. For example packages from `https://ropensci.r-universe.dev` are built at: https://github.com/r-universe/ropensci/actions
 
-Each of these monorepos contains a copy of the [`build.yml`](build.yml) and [`sync.yml`](sync.yml) templates from this repository. However these are mereley small wrappers which invoke the actual "reusable workflows" that you can find under [`.github/workflows`](.github/workflows) in this repository.
 
-## The 'build' workflow
+## Testing the build workflow in your own GitHub repository
 
-If you are here to find out how R-universe builds packages, or want to suggest changes, you are probably looking for the [`.github/workflows/build.yml`](.github/workflows/build.yml) workflow. This file contains the full process to build, check, and deploy each R package update. 
+For debugging purposes, it is also possible to run the R-universe [`build.yml`](.github/workflows/build.yml) workflow in your own R package repository on GitHub. To test this, create a file `.github/workflows/r-universe-test.yml` in your R package source like this:
 
-The entire process is open-source by design, and you can easily find the source for each "action" used in the workflows by navigating to the respective GitHub repository. You will find that the build workflow uses a lot of actions from the repository [r-universe-org/actions](https://github.com/r-universe-org/actions). This is where you could suggest changes to the individual steps of the build process.
+```yaml
+name: Test R-universe
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: R-universe testing
+    uses: r-universe-org/workflows/.github/workflows/build.yml@v3
+    with:
+      universe: ${{ github.repository_owner }}
+```
+
+The parameter `universe` is used to set the context to a given universe. This affects where R package dependencies are downloaded from (besides the default repositories).
+
+Triggering this workflow in your own Git repo will run exaclty the same steps as r-universe, but without deploying anything. The workflow is deliberately not customizable as it serves to test and debug the exact process as it happens on R-universe.
