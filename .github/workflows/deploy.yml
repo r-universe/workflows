@@ -42,6 +42,7 @@ jobs:
       - name: Set upstream commit status
         uses: r-universe-org/commit-status@v3
         if: steps.info.outputs.hasapp
+        continue-on-error: true
         with:
           repository: ${{ steps.info.outputs.repository }}
           ref: ${{ steps.info.outputs.ref }}
