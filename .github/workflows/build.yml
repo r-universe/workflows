@@ -353,7 +353,7 @@ jobs:
 
   bioconductor:
     needs: [source]
-    if: ${{ needs.source.outputs.sourcepkg && inputs.organization == 'bioconductor' }}
+    if: ${{ !cancelled() && needs.source.outputs.sourcepkg && inputs.organization == 'bioconductor' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 100
     name: Bioconductor Checks
