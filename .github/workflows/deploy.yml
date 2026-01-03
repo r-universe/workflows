@@ -39,13 +39,6 @@ jobs:
         env:
           DUMMY_SESSION: ${{ secrets.DUMMY_SESSION }}
 
-      - name: Report inprogess to r-universe
-        shell: bash
-        run: |
-          curl "https://${{ steps.info.outputs.universe }}.r-universe.dev/api/progress/${{ steps.info.outputs.package }}" \
-            -u "${{ secrets.CRANLIKEPWD }}" \
-            -F "url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-
       - name: Set upstream commit status
         uses: r-universe-org/commit-status@v3
         if: steps.info.outputs.hasapp
@@ -59,6 +52,13 @@ jobs:
         env:
            GH_APP_ID: '87942'
            GH_APP_KEY: ${{ secrets.GH_APP_KEY }}
+
+      - name: Report inprogess to r-universe
+        shell: bash
+        run: |
+          curl "https://${{ steps.info.outputs.universe }}.r-universe.dev/api/progress/${{ steps.info.outputs.package }}" \
+            -u "${{ secrets.CRANLIKEPWD }}" \
+            -F "url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Report failures in slack
         if: failure()
