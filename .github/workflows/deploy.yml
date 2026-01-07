@@ -25,7 +25,7 @@ jobs:
       repository: ${{ steps.info.outputs.repository }}
       ref: ${{ steps.info.outputs.ref }}
       subdir: ${{ steps.info.outputs.subdir }}
-      binaries: ${{ steps.info.outputs.binaries }}
+      nobinaries: ${{ steps.info.outputs.nobinaries }}
       organization: ${{ steps.info.outputs.organization }}
       registered: ${{ steps.info.outputs.registered }}
       hasapp: ${{ steps.info.outputs.hasapp }}
@@ -77,7 +77,7 @@ jobs:
       repository: ${{ needs.prepare.outputs.repository }}
       ref: ${{ needs.prepare.outputs.ref }}
       subdir: ${{ needs.prepare.outputs.subdir }}
-      binaries: ${{ needs.prepare.outputs.binaries }}
+      nobinaries: ${{ needs.prepare.outputs.nobinaries }}
       organization: ${{ needs.prepare.outputs.organization }}
       variables: ${{ needs.prepare.outputs.variables }}
 

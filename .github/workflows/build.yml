@@ -15,10 +15,9 @@ on:
       subdir:
         description: Directory to find R package
         type: string
-      binaries:
-        description: Build and check on Windows and MacOS
+      nobinaries:
+        description: Skip build and check on Windows and MacOS
         type: string
-        default: 'true'
       organization:
         description: Run extra organization specific checks
         type: string
@@ -179,7 +178,7 @@ jobs:
 
   windows:
     needs: [source]
-    if: ${{ !cancelled() && needs.source.outputs.sourcepkg && inputs.binaries }}
+    if: ${{ !cancelled() && !inputs.nobinaries && needs.source.outputs.sourcepkg }}
     runs-on: 'windows-2025'
     timeout-minutes: 100
     name: Build R-${{ matrix.r }} for Windows
@@ -242,7 +241,7 @@ jobs:
 
   macos:
     needs: [source]
-    if: ${{ !cancelled() && needs.source.outputs.sourcepkg && inputs.binaries }}
+    if: ${{ !cancelled() && !inputs.nobinaries && needs.source.outputs.sourcepkg }}
     runs-on: macos-${{ matrix.arch == 'x86_64' && '15-intel' || '15' }}
     timeout-minutes: 120
     name: Build R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
