@@ -133,6 +133,8 @@ jobs:
         arch: ${{fromJson(needs.source.outputs.matrix_linux)}}
     container:
       image: ghcr.io/r-universe-org/base-image:${{ matrix.r }}
+      volumes:
+        - /usr:/host/usr
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
