@@ -59,7 +59,7 @@ jobs:
         run: |
           curl "https://${{ steps.info.outputs.universe }}.r-universe.dev/api/progress/${{ steps.info.outputs.package }}" \
             -u "${{ secrets.CRANLIKEPWD }}" \
-            -F "url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            -d "url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Report failures in slack
         if: failure()
