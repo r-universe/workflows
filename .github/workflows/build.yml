@@ -49,6 +49,19 @@ env:
   CRAN_VERSION: ${{ fromJSON(inputs.variables).CRAN_VERSION }}
 
 jobs:
+  teststuff:
+    name: Print stuff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print some stuff
+        run: |
+          echo "github.workflow: ${{github.workflow}}"
+          echo "github.workflow_ref: ${{github.workflow_ref}}"
+          echo "github.action_path: ${{github.action_path}}"
+          ls -ltRA ${{github.action_path}} || true
+          ls -ltRA . || true
+          ls .github || true
+
   source:
     name: Build source pkg and vignettes
     runs-on: ubuntu-latest
