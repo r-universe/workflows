@@ -187,7 +187,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'devel', 'release', 'oldrel' ]
+        r: [ 'devel', 'release' ]
     steps:
       - name: "Prepare Windows system"
         timeout-minutes: 10
