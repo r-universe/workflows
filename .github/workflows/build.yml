@@ -88,7 +88,7 @@ jobs:
           branch: ${{ fromJSON(inputs.variables).branch }}
           articles: ${{ fromJSON(inputs.variables).registered }}
       - name: "Store source package"
-        uses: r-universe-org/actions/store-package@v11
+        uses: r-universe-org/actions/store-package@v12
         if: ${{ !cancelled() && steps.build.outputs.PACKAGE }}
         id: artifact
         with:
@@ -98,7 +98,7 @@ jobs:
           FILE: ${{ steps.build.outputs.SOURCEPKG }}
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
-        uses: r-universe-org/actions/store-package@v11
+        uses: r-universe-org/actions/store-package@v12
         if: ${{ !cancelled() && steps.build.outputs.BINARYPKG }}
         with:
           name: package-linux-release-x86_64
@@ -138,24 +138,24 @@ jobs:
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v11
+        uses: r-universe-org/actions/linux-prep@v12
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/linux-deps@v11
+        uses: r-universe-org/actions/linux-deps@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/linux-build@v11
+        uses: r-universe-org/actions/linux-build@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/linux-check@v11
+        uses: r-universe-org/actions/linux-check@v12
         id: check
         timeout-minutes: 60
         env:
@@ -164,7 +164,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
         id: artifact
-        uses: r-universe-org/actions/store-package@v11
+        uses: r-universe-org/actions/store-package@v12
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-linux-${{ matrix.r }}-${{ matrix.arch }}
@@ -187,31 +187,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'devel', 'release' ]
+        r: [ 'devel', 'release', 'oldrel' ]
     steps:
       - name: "Prepare Windows system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/windows-prep@v11
+        uses: r-universe-org/actions/windows-prep@v12
         with:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for Windows
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v11
+        uses: r-universe-org/actions/setup-r@v12
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/windows-deps@v11
+        uses: r-universe-org/actions/windows-deps@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/windows-build@v11
+        uses: r-universe-org/actions/windows-build@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -219,7 +219,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
           ostype: ${{ needs.source.outputs.ostype }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/windows-check@v11
+        uses: r-universe-org/actions/windows-check@v12
         id: check
         timeout-minutes: 60
         env:
@@ -228,7 +228,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
         id: artifact
-        uses: r-universe-org/actions/store-package@v11
+        uses: r-universe-org/actions/store-package@v12
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-windows-${{ matrix.r }}
@@ -250,12 +250,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'devel', 'release' ]
+        r: [ 'release', 'oldrel' ]
         arch: ${{fromJson(needs.source.outputs.matrix_macos)}}
     steps:
       - name: "Prepare macOS system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/macos-prep@v11
+        uses: r-universe-org/actions/macos-prep@v12
         with:
           version: ${{ matrix.r }}
           fortran: ${{ needs.source.outputs.fortran }}
@@ -264,27 +264,27 @@ jobs:
           quarto: ${{ needs.source.outputs.quarto }}
       - name: Install R-${{matrix.r}} for MacOS
         timeout-minutes: 10
-        uses: r-universe-org/actions/setup-r@v11
+        uses: r-universe-org/actions/setup-r@v12
         id: install-r
         with:
           r-version: ${{ matrix.r }}
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/macos-deps@v11
+        uses: r-universe-org/actions/macos-deps@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/macos-build@v11
+        uses: r-universe-org/actions/macos-build@v12
         timeout-minutes: 90
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "R CMD check"
-        uses: r-universe-org/actions/macos-check@v11
+        uses: r-universe-org/actions/macos-check@v12
         id: check
         timeout-minutes: 60
         env:
@@ -293,7 +293,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store binaries"
         id: artifact
-        uses: r-universe-org/actions/store-package@v11
+        uses: r-universe-org/actions/store-package@v12
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
           name: package-macos-${{ matrix.r }}-${{ matrix.arch }}
@@ -321,10 +321,10 @@ jobs:
     steps:
       - name: "Prepare WebAssembly system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v11
+        uses: r-universe-org/actions/linux-prep@v12
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/linux-deps@v11
+        uses: r-universe-org/actions/linux-deps@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -332,7 +332,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - id: build
         name: Build package "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/wasm-build@v11
+        uses: r-universe-org/actions/wasm-build@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
@@ -341,7 +341,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: "Store package files"
         id: artifact
-        uses: r-universe-org/actions/store-package@v11
+        uses: r-universe-org/actions/store-package@v12
         if: ${{ always() && steps.build.outputs.binarypkg }}
         with:
           name: package-wasm-${{ matrix.r }}
@@ -365,17 +365,17 @@ jobs:
     steps:
       - name: "Prepare Linux system"
         timeout-minutes: 10
-        uses: r-universe-org/actions/linux-prep@v11
+        uses: r-universe-org/actions/linux-prep@v12
       - name: "Get dependences"
         id: deps
-        uses: r-universe-org/actions/linux-deps@v11
+        uses: r-universe-org/actions/linux-deps@v12
         timeout-minutes: 60
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Run BiocCheck for "${{needs.source.outputs.package}}"
-        uses: r-universe-org/actions/bioc-check@v11
+        uses: r-universe-org/actions/bioc-check@v12
         id: check
         timeout-minutes: 60
         env:

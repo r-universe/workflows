@@ -33,7 +33,7 @@ jobs:
     steps:
       - id: info
         name: Get info from monorepo
-        uses: r-universe-org/actions/before-build@v11
+        uses: r-universe-org/actions/before-build@v12
         with:
           package: ${{inputs.package}}
         env:
@@ -63,7 +63,7 @@ jobs:
 
       - name: Report failures in slack
         if: failure()
-        uses: r-universe-org/actions/post-slack@v11
+        uses: r-universe-org/actions/post-slack@v12
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           DEPLOY_STATUS: "prepare problem"
@@ -101,7 +101,7 @@ jobs:
       - id: deployment
         name: Upload packages to server
         if: ${{ needs.build.result != 'cancelled' && needs.build.outputs.package == needs.prepare.outputs.package }}
-        uses: r-universe-org/actions/deploy-packages@v11
+        uses: r-universe-org/actions/deploy-packages@v12
         env:
           UPSTREAM: ${{ needs.prepare.outputs.repository }}
           UNIVERSE: ${{ needs.prepare.outputs.universe }}
@@ -115,7 +115,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       - name: Report deployment failures in slack
         if: failure()
-        uses: r-universe-org/actions/post-slack@v11
+        uses: r-universe-org/actions/post-slack@v12
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           DEPLOY_STATUS: ${{ steps.deployment.outcome }}
