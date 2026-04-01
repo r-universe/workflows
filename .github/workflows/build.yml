@@ -99,7 +99,7 @@ jobs:
           TARGET: ${{ steps.build.outputs.SOURCEPKG && 'source' || 'failure' }}
       - name: "Store linux binary package"
         uses: r-universe-org/actions/store-package@v12
-        if: ${{ !cancelled() && steps.build.outputs.BINARYPKG }}
+        if: ${{ !cancelled() && steps.build.outputs.BINARYPKG && github.run_attempt == 1 }}
         with:
           name: package-linux-release-x86_64
           JOB_STATUS: ${{ job.status }}
