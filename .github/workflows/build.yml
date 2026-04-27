@@ -129,7 +129,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r: [ 'devel', 'release', 'oldrel' ]
+        r: [ 'devel', 'release' ]
         arch: ${{fromJson(needs.source.outputs.matrix_linux)}}
     container:
       image: ghcr.io/r-universe-org/base-image:${{ matrix.r }}
