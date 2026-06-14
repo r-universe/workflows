@@ -4,7 +4,6 @@ This repository contains the GHA [reusable workflows](https://docs.github.com/en
 
 For deployment to [https://r-universe.dev](https://r-universe.dev), builds are run inside the __monorepos__ of the universe owner under the [r-universe](http://github.com/r-universe) GitHub organization. For example packages from `https://ropensci.r-universe.dev` are built at: https://github.com/r-universe/ropensci/actions
 
-
 ## Testing the build workflow in your own GitHub repository
 
 For debugging purposes, it is also possible to run the R-universe [`build.yml`](.github/workflows/build.yml) workflow in your own R package repository on GitHub. To test this, create a file `.github/workflows/r-universe-test.yml` in your R package source like this:
