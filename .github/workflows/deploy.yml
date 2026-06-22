@@ -90,7 +90,7 @@ jobs:
       version_change: ${{ steps.deployment.outputs.version_change }}
     steps:
       - name: Download package files
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
       - name: Upload site to rOpenSci docs server
         if: ${{ needs.build.result != 'cancelled' && needs.prepare.outputs.organization == 'ropensci' }}
         continue-on-error: true
