@@ -385,7 +385,7 @@ jobs:
       - name: Store ${{needs.source.outputs.package}}.BiocCheck
         id: artifact
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: bioc-checks
           path: ${{needs.source.outputs.package}}.BiocCheck
