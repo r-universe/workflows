@@ -47,6 +47,7 @@ env:
   UNIVERSE_NAME: ${{ inputs.universe }}
   MY_UNIVERSE: ${{ inputs.universe && format('https://{0}.r-universe.dev', inputs.universe) || '' }}
   CRAN_VERSION: ${{ fromJSON(inputs.variables).CRAN_VERSION }}
+  NO_ADDITIONAL_REPOSITORIES: ${{ inputs.organization == 'cran' || inputs.organization == 'bioconductor' }}
 
 jobs:
   source:
