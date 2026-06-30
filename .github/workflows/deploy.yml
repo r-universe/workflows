@@ -11,6 +11,8 @@ on:
       GH_APP_KEY:
       SLACK_TOKEN:
       BOT_TOKEN:
+      AWS_SECRET_ACCESS_KEY:
+      AWS_ACCESS_KEY_ID:
 
 name: Deploy package
 run-name: ${{ github.event.head_commit.message || format('{0} (rebuild)', inputs.package) }}
@@ -100,6 +102,7 @@ jobs:
           GITHUB_PAT: ${{ secrets.BOT_TOKEN }}
       - id: deployment
         name: Upload packages to server
+        timeout-minutes: 15
         if: ${{ needs.build.result != 'cancelled' && needs.build.outputs.package == needs.prepare.outputs.package }}
         uses: r-universe-org/actions/deploy-packages@v12
         env:
@@ -113,6 +116,8 @@ jobs:
           BIOC_CHECKS: ${{ needs.build.outputs.biocchecks }}
           CRANLIKEPWD: ${{ secrets.CRANLIKEPWD }}
           GH_TOKEN: ${{ github.token }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       - name: Report deployment failures in slack
         if: failure()
         uses: r-universe-org/actions/post-slack@v12
