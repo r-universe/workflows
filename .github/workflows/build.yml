@@ -77,7 +77,7 @@ jobs:
       - name: Free disk space on runner
         run: rm -Rf /usr/share/dotnet /opt/ghc "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY" || true
       - id: build
-        timeout-minutes: 60
+        timeout-minutes: ${{ inputs.organization == 'bioconductor' && 90 || 60 }}
         name: Build source package and vignettes
         uses: r-universe-org/build-source@master
         env:
@@ -150,7 +150,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
         uses: r-universe-org/actions/linux-build@v12
-        timeout-minutes: 60
+        timeout-minutes: ${{ inputs.organization == 'bioconductor' && 90 || 60 }}
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
