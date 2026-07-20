@@ -82,6 +82,7 @@ jobs:
       nobinaries: ${{ needs.prepare.outputs.nobinaries }}
       organization: ${{ needs.prepare.outputs.organization }}
       variables: ${{ needs.prepare.outputs.variables }}
+      timeout: ${{ needs.prepare.outputs.organization == 'bioconductor' && 90 || 60 }}
 
   deploy:
     name: Deploy and report

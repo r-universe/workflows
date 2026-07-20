@@ -26,6 +26,10 @@ on:
         description: Extra environment variables from R-universe
         type: string
         default: '{}'
+      timeout:
+        description: Max build time in minutes
+        type: number
+        default: 60
     outputs:
       commitinfo:
         description: "Metadata from the commit"
@@ -77,7 +81,7 @@ jobs:
       - name: Free disk space on runner
         run: rm -Rf /usr/share/dotnet /opt/ghc "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY" || true
       - id: build
-        timeout-minutes: ${{ inputs.organization == 'bioconductor' && 90 || 60 }}
+        timeout-minutes: ${{ inputs.timeout }}
         name: Build source package and vignettes
         uses: r-universe-org/build-source@master
         env:
@@ -125,7 +129,7 @@ jobs:
     needs: [source]
     if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
     runs-on: ubuntu-24.04${{matrix.arch=='arm64' && '-arm' || ''}}
-    timeout-minutes: 120
+    timeout-minutes: 150
     name: Build R-${{ matrix.r }} for Linux ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
@@ -150,7 +154,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
         uses: r-universe-org/actions/linux-build@v12
-        timeout-minutes: ${{ inputs.organization == 'bioconductor' && 90 || 60 }}
+        timeout-minutes: ${{ inputs.timeout }}
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
@@ -183,7 +187,7 @@ jobs:
     needs: [source]
     if: ${{ !cancelled() && !inputs.nobinaries && needs.source.outputs.sourcepkg }}
     runs-on: 'windows-2025'
-    timeout-minutes: 100
+    timeout-minutes: 150
     name: Build R-${{ matrix.r }} for Windows
     strategy:
       fail-fast: false
@@ -213,7 +217,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
         uses: r-universe-org/actions/windows-build@v12
-        timeout-minutes: 60
+        timeout-minutes: ${{ inputs.timeout }}
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
@@ -246,7 +250,7 @@ jobs:
     needs: [source]
     if: ${{ !cancelled() && !inputs.nobinaries && needs.source.outputs.sourcepkg }}
     runs-on: macos-${{ matrix.arch == 'x86_64' && '15-intel' || '15' }}
-    timeout-minutes: 120
+    timeout-minutes: 150
     name: Build R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
@@ -279,7 +283,7 @@ jobs:
           sourcepkg: ${{ needs.source.outputs.sourcepkg }}
       - name: Build package "${{needs.source.outputs.package}}"
         uses: r-universe-org/actions/macos-build@v12
-        timeout-minutes: 90
+        timeout-minutes: ${{ inputs.timeout }}
         env:
           GITHUB_PAT: ${{secrets.GITHUB_TOKEN}}
         with:
