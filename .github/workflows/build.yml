@@ -74,8 +74,7 @@ jobs:
       quarto: ${{ steps.build.outputs.NEED_QUARTO }}
       ostype: ${{ steps.build.outputs.OSTYPE }}
       compiled: ${{ steps.build.outputs.NEEDS_COMPILATION }}
-      matrix_macos: ${{ steps.matrix.outputs.matrix_macos }}
-      matrix_linux: ${{ steps.matrix.outputs.matrix_linux }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
 
     steps:
       - name: Free disk space on runner
@@ -113,14 +112,10 @@ jobs:
           TARGET: 'linux'
       - id: matrix
         if: always()
-        run: |
-          if [ "${{ steps.build.outputs.NEEDS_COMPILATION }}" ]; then
-          echo 'matrix_macos=["x86_64","arm64"]' >> $GITHUB_OUTPUT
-          echo 'matrix_linux=["x86_64","arm64"]' >> $GITHUB_OUTPUT
-          else
-          echo 'matrix_macos=["arm64"]' >> $GITHUB_OUTPUT
-          echo 'matrix_linux=["x86_64"]' >> $GITHUB_OUTPUT
-          fi
+        uses: r-universe-org/actions/build-matrix@v12
+        with:
+          compiled: ${{ steps.build.outputs.NEEDS_COMPILATION }}
+          universe: ${{ inputs.universe }}
       - name: "${{'Conclude'}}: source: ${{ steps.build.outputs.RVERSION }}: ${{ steps.build.outcome == 'success' && 'OK' || 'ERROR' }}: ${{ steps.artifact.outputs.artifact-id }}"
         if: always()
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
@@ -133,9 +128,7 @@ jobs:
     name: Build R-${{ matrix.r }} for Linux ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
-      matrix:
-        r: [ 'devel', 'release' ]
-        arch: ${{fromJson(needs.source.outputs.matrix_linux)}}
+      matrix: ${{fromJson(needs.source.outputs.matrix).linux}}
     container:
       image: ghcr.io/r-universe-org/base-image:${{ matrix.r }}
       volumes:
@@ -185,14 +178,13 @@ jobs:
 
   windows:
     needs: [source]
-    if: ${{ !cancelled() && !inputs.nobinaries && needs.source.outputs.sourcepkg }}
+    if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
     runs-on: 'windows-2025'
     timeout-minutes: 150
     name: Build R-${{ matrix.r }} for Windows
     strategy:
       fail-fast: false
-      matrix:
-        r: [ 'devel', 'release', 'oldrel' ]
+      matrix: ${{fromJson(needs.source.outputs.matrix).windows}}
     steps:
       - name: "Prepare Windows system"
         timeout-minutes: 10
@@ -254,9 +246,7 @@ jobs:
     name: Build R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
-      matrix:
-        r: [ 'release', 'oldrel' ]
-        arch: ${{fromJson(needs.source.outputs.matrix_macos)}}
+      matrix: ${{fromJson(needs.source.outputs.matrix).macos}}
     steps:
       - name: "Prepare macOS system"
         timeout-minutes: 10
@@ -319,8 +309,7 @@ jobs:
     name: Build R-${{ matrix.r }} for Wasm
     strategy:
       fail-fast: false
-      matrix:
-        r: [ 'release' ]
+      matrix: ${{fromJson(needs.source.outputs.matrix).wasm}}
     container:
       image: ghcr.io/r-universe-org/build-wasm${{ matrix.r == 'oldrel' && ':4.4' || '' }}
     steps:
