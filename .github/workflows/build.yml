@@ -179,9 +179,9 @@ jobs:
   windows:
     needs: [source]
     if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
-    runs-on: 'windows-2025'
+    runs-on: ${{matrix.arch=='arm64' && 'windows-11-arm' || 'windows-2025'}}
     timeout-minutes: 150
-    name: Build R-${{ matrix.r }} for Windows
+    name: Build R-${{ matrix.r }} for Windows ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.source.outputs.matrix).windows}}
@@ -228,13 +228,13 @@ jobs:
         uses: r-universe-org/actions/store-package@v12
         if: ${{ always() && steps.check.outputs.binarypkg }}
         with:
-          name: package-windows-${{ matrix.r }}
+          name: package-windows-${{ matrix.r }}-${{ matrix.arch }}
           JOB_STATUS: ${{ job.status }}
           DISTRO: windows
           FILE: ${{ steps.check.outputs.binarypkg }}
           CHECKSTATUS: ${{ steps.check.outputs.checkstatus }}
           TARGET: windows
-      - name: "${{'Conclude'}}: windows-${{ matrix.r }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
+      - name: "${{'Conclude'}}: windows-${{ matrix.r }}-${{ matrix.arch }}: ${{ steps.deps.outputs.rversion }}: ${{ steps.check.outputs.checkstatus || 'FAIL' }}: ${{ steps.artifact.outputs.artifact-id }}"
         run: echo "Artifact URL ${{steps.artifact.outputs.artifact-url}}"
         if: always()
 
