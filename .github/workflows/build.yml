@@ -193,6 +193,7 @@ jobs:
           java: ${{ needs.source.outputs.java }}
           jags: ${{ needs.source.outputs.jags }}
           quarto: ${{ needs.source.outputs.quarto }}
+          cargo: ${{ needs.source.outputs.cargo }}
       - name: Install R-${{matrix.r}} for Windows
         timeout-minutes: 10
         uses: r-universe-org/actions/setup-r@v12
