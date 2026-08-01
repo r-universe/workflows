@@ -55,7 +55,7 @@ env:
 
 jobs:
   source:
-    name: Build source pkg and vignettes
+    name: Source pkg and vignettes
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env: ${{fromJSON(inputs.variables)}}
@@ -125,7 +125,7 @@ jobs:
     if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
     runs-on: ubuntu-24.04${{matrix.arch=='arm64' && '-arm' || ''}}
     timeout-minutes: 150
-    name: Build R-${{ matrix.r }} for Linux ${{ needs.source.outputs.compiled && matrix.arch || '' }}
+    name: R-${{ matrix.r }} for Linux ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.source.outputs.matrix).linux}}
@@ -181,7 +181,7 @@ jobs:
     if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
     runs-on: ${{matrix.arch=='arm64' && 'windows-11-arm' || 'windows-2025'}}
     timeout-minutes: 150
-    name: Build R-${{ matrix.r }} for Windows ${{ needs.source.outputs.compiled && matrix.arch || '' }}
+    name: R-${{ matrix.r }} for Windows ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.source.outputs.matrix).windows}}
@@ -244,7 +244,7 @@ jobs:
     if: ${{ !cancelled() && !inputs.nobinaries && needs.source.outputs.sourcepkg }}
     runs-on: macos-${{ matrix.arch == 'x86_64' && '15-intel' || '15' }}
     timeout-minutes: 150
-    name: Build R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
+    name: R-${{ matrix.r }} for MacOS ${{ needs.source.outputs.compiled && matrix.arch || '' }}
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.source.outputs.matrix).macos}}
@@ -307,7 +307,7 @@ jobs:
     if: ${{ !cancelled() && needs.source.outputs.sourcepkg }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    name: Build R-${{ matrix.r }} for Wasm
+    name: R-${{ matrix.r }} for Wasm
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.source.outputs.matrix).wasm}}
@@ -389,7 +389,7 @@ jobs:
         if: always()
 
   ropensci:
-    name: Build rOpenSci docs site
+    name: Build rOpenSci docs
     runs-on: ubuntu-latest
     if: ${{ inputs.organization == 'ropensci' }}
     timeout-minutes: 90
