@@ -95,7 +95,7 @@ jobs:
       - name: Download package files
         uses: actions/download-artifact@v8
       - name: Upload site to rOpenSci docs server
-        if: ${{ needs.build.result != 'cancelled' && needs.prepare.outputs.organization == 'ropensci' }}
+        if: ${{ needs.build.result != 'cancelled' && needs.prepare.outputs.universe == 'ropensci' }}
         continue-on-error: true
         uses: r-universe-org/deploy-docs@master
         env:
