@@ -23,6 +23,8 @@ jobs:
       universe: ${{ github.repository_owner }}
 ```
 
+You can either create the file manually or by calling the [`universe::use_universe_action()`](https://docs.ropensci.org/universe/reference/use_universe_action.html) function in the [universe R package](https://docs.ropensci.org/universe).
+
 The parameter `universe` is used to set the context to a given universe. This affects where R package dependencies are downloaded from (besides the default repositories).
 
 Triggering this workflow in your own Git repo will run exaclty the same steps as r-universe, but without deploying anything. The workflow is deliberately not customizable as it serves to test and debug the exact process as it happens on R-universe.
