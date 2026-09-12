@@ -58,6 +58,7 @@ jobs:
 
       - name: Report inprogess to r-universe
         shell: bash
+        continue-on-error: true
         run: |
           curl "https://${{ steps.info.outputs.universe }}.r-universe.dev/api/progress/${{ steps.info.outputs.package }}" \
             -u "${{ secrets.CRANLIKEPWD }}" \
